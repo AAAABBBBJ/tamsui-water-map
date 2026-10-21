@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<base target="_top">
+<title>淡水河流域公民水質地圖</title>
+
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* 版面：投影用單螢幕應用。頂列＝標題＋分頁＋項目＋月份；下方一個分頁佔滿剩餘高度，不需捲動。 */
+:root {
+  --bg: #eef3f4; --panel: #ffffff; --ink: #0f2a33; --muted: #4d646b; --line: #d0dcdf;
+  --water: #7fb0cc; --water-soft: #d3e6ef; --accent: #0d6688;
+  --good: #22915f; --warn: #d39b12; --bad: #c9432f; --na: #aebdc1;
+  --fix: #3f84d4; --ask: #e0a91d; --official: #6450b8; --rain: #3f84d4;
+  --c1: #0f6b8f; --c2: #cf4c39; --c3: #2b9a69; --c4: #8a5cc2; --c5: #d98a1c; --c6: #1a9aa3; --c7: #c2477f; --c8: #6b7d1f; --c9: #4a5fc1; --c10: #8a6142;
+  --veil: rgba(15,42,51,.10);
+  --font-display: "Noto Serif TC", "Songti TC", serif;
+  --font-body: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;
+  --font-data: "IBM Plex Mono", ui-monospace, "SFMono-Regular", monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0c1a1f; --panel: #12252c; --ink: #e6f0f2; --muted: #9db3b9; --line: #26434c;
+  --water: #3f7ea3; --water-soft: #1b3a47; --accent: #5cb6dc;
+  --good: #3fbf86; --warn: #e6b93e; --bad: #ec6a55; --na: #4d6870; --fix: #6ea8ec; --ask: #e6b93e; --official: #a597ef; --rain: #6ea8ec;
+  --c1: #5cb6dc; --c2: #ec6a55; --c3: #3fbf86; --c4: #b48cf0; --c5: #f0a640; --c6: #3cc8c8; --c7: #e57aa8; --c8: #a8bf45; --c9: #8a9cf5; --c10: #c49a72;
+  --veil: rgba(0,0,0,.28); color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0c1a1f; --panel: #12252c; --ink: #e6f0f2; --muted: #9db3b9; --line: #26434c;
+  --water: #3f7ea3; --water-soft: #1b3a47; --accent: #5cb6dc;
+  --good: #3fbf86; --warn: #e6b93e; --bad: #ec6a55; --na: #4d6870; --fix: #6ea8ec; --ask: #e6b93e; --official: #a597ef; --rain: #6ea8ec;
+  --c1: #5cb6dc; --c2: #ec6a55; --c3: #3fbf86; --c4: #b48cf0; --c5: #f0a640; --c6: #3cc8c8; --c7: #e57aa8; --c8: #a8bf45; --c9: #8a9cf5; --c10: #c49a72;
+  --veil: rgba(0,0,0,.28); color-scheme: dark }
+
+html, body { height: 100%; margin: 0; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-body); line-height: 1.5;
+  font-size: clamp(14px, 0.42vw + 8.5px, 19px);
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 12px;
+  display: flex; flex-direction: column; gap: 10px; box-sizing: border-box; }
+h1, h2, h3 { margin: 0; text-wrap: balance; }
+.num { font-family: var(--font-data); font-variant-numeric: tabular-nums; }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+[hidden] { display: none !important; }
+
+header { display: flex; flex-wrap: wrap; gap: 8px 20px; align-items: center; }
+h1 { font-family: var(--font-display); font-size: 1.45em; line-height: 1.2; }
+.sub { color: var(--muted); font-size: .8em; }
+.tabs { display: flex; gap: 2px; background: var(--line); padding: 3px; border-radius: 10px; }
+.tabs button { border: 0; background: transparent; padding: .3em .9em; border-radius: 8px; cursor: pointer; font-weight: 500; }
+.tabs button[aria-selected="true"] { background: var(--panel); color: var(--accent); box-shadow: 0 1px 2px var(--veil); }
+.bar { display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center; margin-left: auto; }
+.seg { display: flex; gap: 4px; flex-wrap: wrap; }
+.seg button { border: 1px solid var(--line); background: var(--panel); padding: .2em .75em; border-radius: 999px; cursor: pointer; font-size: .9em; }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--panel); border-color: var(--accent); }
+.month { display: flex; align-items: center; gap: 8px; }
+.month input { width: clamp(140px, 16vw, 320px); accent-color: var(--accent); }
+.month .lbl { font-family: var(--font-data); font-size: 1.05em; min-width: 4.6em; font-weight: 500; }
+.play { border: 1px solid var(--line); background: var(--panel); border-radius: 999px; width: 2em; height: 2em; cursor: pointer; }
+
+main { flex: 1; min-height: 0; display: flex; }
+.view { flex: 1; min-height: 0; min-width: 0; display: grid; gap: 12px; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; min-width: 0; min-height: 0; display: flex; flex-direction: column; }
+.card h2 { font-size: 1em; display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.card h2 small { font-weight: 400; font-size: .78em; color: var(--muted); }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: .78em; color: var(--muted); }
+.legend i { display: inline-block; width: .8em; height: .8em; border-radius: 50%; margin-right: 5px; vertical-align: -1px; }
+.chart { width: 100%; display: block; flex: 1; min-height: 0; }
+.chart text { fill: var(--muted); font-family: var(--font-data); }
+.toggles { display: flex; gap: 14px; flex-wrap: wrap; font-size: .82em; }
+.toggles label { display: flex; align-items: center; gap: 5px; cursor: pointer; }
+
+/* 地圖 */
+#v-map { grid-template-columns: minmax(0, 1.75fr) minmax(0, 1fr); }
+.mapbox { position: relative; flex: 1; min-height: 0; }
+#map { position: absolute; inset: 0; width: 100%; height: 100%; }
+.mapfoot { display: flex; justify-content: space-between; gap: 8px 16px; flex-wrap: wrap; align-items: center; padding-top: 6px; }
+.site-name { font-family: var(--font-display); font-size: 1.5em; }
+.vals { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; margin: 8px 0; }
+.val { border: 1px solid var(--line); border-radius: 8px; padding: 4px 7px; cursor: pointer; background: transparent; text-align: left; }
+.val[aria-pressed="true"] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.val .k { font-size: .72em; color: var(--muted); display: block; }
+.val .v { font-family: var(--font-data); font-size: 1.15em; display: flex; align-items: center; gap: 5px; }
+.dot { width: .6em; height: .6em; border-radius: 50%; flex: none; }
+.status { font-size: .75em; padding: 1px 8px; border-radius: 4px; font-weight: 500; white-space: nowrap; }
+.st-原始值 { background: color-mix(in srgb, var(--good) 18%, transparent); }
+.st-調整值 { background: color-mix(in srgb, var(--fix) 22%, transparent); }
+.st-待查核 { background: color-mix(in srgb, var(--ask) 32%, transparent); }
+.st-未填報 { background: color-mix(in srgb, var(--na) 30%, transparent); }
+.meta { color: var(--muted); font-size: .82em; }
+.note { font-size: .82em; display: flex; flex-direction: column; gap: 3px; margin-top: 6px; }
+.note p { margin: 0; }
+.note .lab { color: var(--muted); margin-right: 6px; }
+.tip { position: absolute; pointer-events: none; background: var(--ink); color: var(--panel); font-size: .8em; padding: 4px 8px; border-radius: 6px; white-space: nowrap; transform: translate(-50%, -130%); z-index: 2; }
+
+/* 趨勢 */
+#v-trend { grid-template-rows: auto minmax(0, 1fr); }
+.chips { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.chip { border: 1px solid var(--line); background: var(--panel); border-radius: 999px; padding: .1em .7em; font-size: .85em; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+.chip i { width: .8em; height: .25em; border-radius: 2px; display: inline-block; }
+.chip[aria-pressed="false"] { opacity: .55; }
+.mini { border: 1px solid var(--line); background: transparent; border-radius: 6px; padding: .1em .6em; font-size: .8em; cursor: pointer; }
+.grid6 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: repeat(2, minmax(0, 1fr)); gap: 12px; min-height: 0; }
+table.snap { width: 100%; border-collapse: collapse; font-size: .8em; }
+table.snap th, table.snap td { padding: 3px 5px; border-bottom: 1px solid var(--line); text-align: right; }
+table.snap th:first-child, table.snap td:first-child { text-align: left; }
+table.snap th { font-weight: 500; color: var(--muted); }
+.scroll { overflow: auto; min-height: 0; }
+
+/* 官方對照 */
+#v-official { grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr); }
+.finding { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 6px 0 10px; }
+.finding div { border-top: 3px solid var(--accent); padding-top: 6px; }
+.finding b { display: block; font-size: 1.25em; font-family: var(--font-data); }
+.finding span { font-size: .8em; color: var(--muted); }
+table.pairs { width: 100%; border-collapse: collapse; font-size: .85em; }
+table.pairs th, table.pairs td { padding: 5px 6px; border-bottom: 1px solid var(--line); text-align: right; }
+table.pairs th:nth-child(-n+2), table.pairs td:nth-child(-n+2) { text-align: left; }
+table.pairs th { color: var(--muted); font-weight: 500; font-size: .9em; }
+table.pairs tr.row { cursor: pointer; }
+table.pairs tr.row:hover td { background: color-mix(in srgb, var(--accent) 7%, transparent); }
+table.pairs tr.sel td { background: color-mix(in srgb, var(--accent) 13%, transparent); }
+.neg { color: var(--bad); } .pos { color: var(--good); }
+.two { display: grid; grid-template-rows: repeat(2, minmax(0, 1fr)); gap: 6px; flex: 1; min-height: 0; }
+.two > div { display: flex; flex-direction: column; min-height: 0; }
+
+/* 資料檢核 */
+#v-qa { grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); }
+.heat { overflow: auto; }
+.heat table { border-collapse: separate; border-spacing: 3px; font-size: .85em; width: 100%; table-layout: fixed; min-width: 640px; }
+.heat col.c0 { width: 6.5em; } .heat col.cr { width: 3.2em; }
+.heat th { font-weight: 400; color: var(--muted); white-space: nowrap; text-align: right; padding-right: 6px; }
+.heat thead th { text-align: center; font-family: var(--font-data); font-size: .85em; padding: 0; }
+.heat td { height: 2.1em; border-radius: 3px; cursor: pointer; padding: 0; }
+.heat td.h-原始值 { background: color-mix(in srgb, var(--good) 45%, transparent); }
+.heat td.h-調整值 { background: var(--fix); }
+.heat td.h-待查核 { background: var(--ask); }
+.heat td.h-缺 { box-shadow: inset 0 0 0 1px var(--na); }
+.heat td.h-前 { background: repeating-linear-gradient(135deg, transparent 0 3px, var(--line) 3px 4px); cursor: default; }
+.heat td.cur { outline: 2px solid var(--ink); }
+.heat td.rate { width: auto; font-family: var(--font-data); color: var(--muted); cursor: default; padding-left: 6px; }
+.why ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; font-size: .85em; }
+.why li { display: grid; grid-template-columns: 6px minmax(0, 1fr); gap: 9px; cursor: pointer; }
+.why li .b { border-radius: 3px; }
+.why .act { color: var(--muted); font-size: .9em; }
+.why .sum { color: var(--muted); font-size: .8em; margin: 2px 0 8px; }
+footer { font-size: .7em; color: var(--muted); }
+
+/* 窄螢幕：改為上下堆疊、可捲動 */
+@media (max-width: 960px), (max-height: 560px) {
+  html, body { height: auto; }
+  main { display: block; }
+  .view { display: flex; flex-direction: column; }
+  .mapbox { height: 60vw; min-height: 300px; flex: none; }
+  .grid6 { display: flex; flex-direction: column; }
+  .grid6 > .card, .two > div { height: 260px; flex: none; }
+  .two { display: flex; flex-direction: column; }
+  .finding { grid-template-columns: minmax(0, 1fr); }
+  .bar { margin-left: 0; }
+  .vals { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  #siteChart { height: 200px; flex: none; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+
+
+<header>
+  <div>
+    <h1>淡水河流域公民水質調查</h1>
+    <div class="sub" id="facts"></div>
+  </div>
+  <nav class="tabs" role="tablist" aria-label="檢視">
+    <button role="tab" data-v="map">地圖</button>
+    <button role="tab" data-v="trend">趨勢</button>
+    <button role="tab" data-v="official">官方對照</button>
+    <button role="tab" data-v="qa">資料檢核</button>
+  </nav>
+  <div class="bar">
+    <div class="seg" id="params" role="group" aria-label="項目"></div>
+    <div class="month">
+      <button class="play" id="play" aria-label="逐月播放">▶</button>
+      <input type="range" id="month" min="0" max="21" aria-label="月份">
+      <span class="lbl" id="monthLbl"></span>
+    </div>
+  </div>
+</header>
+
+<main>
+  <!-- 地圖 -->
+  <section class="view" id="v-map">
+    <div class="card">
+      <h2>水系示意圖 <small id="mapNote"></small></h2>
+      <div class="mapbox" id="mapbox"><svg id="map" role="img" aria-label="淡水河流域與桃園水系示意圖"></svg><div class="tip" id="tip" hidden></div></div>
+      <div class="mapfoot">
+        <div class="legend" id="legend"></div>
+        <div class="toggles">
+          <label><input type="checkbox" id="tgOfficial" checked> 環境部測站</label>
+          <label><input type="checkbox" id="tgMask"> 檢核狀態</label>
+          <label><input type="checkbox" id="tgRain"> 雨量</label>
+        </div>
+      </div>
+    </div>
+    <aside class="card" id="panel" aria-live="polite"></aside>
+  </section>
+
+  <!-- 趨勢 -->
+  <section class="view" id="v-trend" hidden>
+    <div class="chips"><span id="chips" class="chips"></span><button class="mini" id="all">全選</button><button class="mini" id="none">清除</button></div>
+    <div class="grid6" id="grid6"></div>
+  </section>
+
+  <!-- 官方對照 -->
+  <section class="view" id="v-official" hidden>
+    <div class="card">
+      <h2>公民調查與環境部測站 <small>同一年月配對</small></h2>
+      <div class="finding" id="finding"></div>
+      <div class="scroll"><table class="pairs" id="pairs"></table></div>
+      <div class="meta" style="margin-top:6px">位置、時間與水深不同，看落差方向，不逐月判定對錯。</div>
+    </div>
+    <div class="card">
+      <h2 id="pairTitle"></h2>
+      <div class="legend" id="pairLegend" style="margin:4px 0"></div>
+      <div class="two"><div><svg class="chart" id="pc1" role="img" aria-label="水溫對照"></svg></div><div><svg class="chart" id="pc2" role="img" aria-label="溶氧對照"></svg></div></div>
+    </div>
+  </section>
+
+  <!-- 資料檢核 -->
+  <section class="view" id="v-qa" hidden>
+    <div class="card">
+      <h2>填報與檢核 <small>點格子切換月份與點位</small></h2>
+      <div class="heat scroll" id="heat"></div>
+      <div class="legend" style="margin-top:6px">
+        <span><i style="background:color-mix(in srgb,var(--good) 45%,transparent)"></i>原始值</span>
+        <span><i style="background:var(--fix)"></i>調整值</span>
+        <span><i style="background:var(--ask)"></i>待查核</span>
+        <span><i style="box-shadow:inset 0 0 0 1px var(--na)"></i>未填報</span>
+        <span><i style="background:repeating-linear-gradient(135deg,transparent 0 3px,var(--line) 3px 4px)"></i>尚未加入</span>
+      </div>
+    </div>
+    <div class="card why"><div id="why" class="scroll"></div></div>
+  </section>
+</main>
+
+<footer>資料：聯盟水質監測上傳表單（北水分署）、環境部全國環境水質監測資訊網、中央氣象署 CODiS。燈號依議程附件二觀察門檻，僅供觀察，不作法規判定。</footer>
+
+<script>
+const D = {"records":[{"k":"石門水庫-靜止","ym":"2025-01","d":"2025-01-07","t":18.0,"o":4.0,"s":42,"p":7.5,"u":40.0,"w":"晴天","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"石門水庫-靜止","ym":"2025-02","d":"2025-02-04","t":16.0,"o":4.0,"s":41,"p":7.5,"u":40.0,"w":"晴多雲","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"石門水庫-靜止","ym":"2025-03","d":"2025-03-04","t":21.0,"o":4.0,"s":46,"p":7.5,"u":40.0,"w":"晴時多雲","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":"凌晨下大雨"},{"k":"石門水庫-靜止","ym":"2025-04","d":"2025-04-01","t":18.0,"o":4.0,"s":42,"p":7.5,"u":40.0,"w":"雨","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"石門水庫-靜止","ym":"2025-05","d":"2025-05-06","t":26.0,"o":4.0,"s":49,"p":8.0,"u":40.0,"w":"晴天","st":"調整值","desc":"濁度：4 → 40（判定為 40 漏打 0）","q":[],"adj":["濁度 4→40：判定為 40 漏打 0"],"ph":"","note":""},{"k":"石門水庫-靜止","ym":"2025-06","d":"2025-06-03","t":26.0,"o":4.0,"s":49,"p":7.5,"u":40.0,"w":"陰天","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"石門水庫-靜止","ym":"2025-07","d":"2025-07-01","t":30.0,"o":4.0,"s":53,"p":8.5,"u":40.0,"w":"晴","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"石門水庫-靜止","ym":"2025-08","d":"2025-08-05","t":32.0,"o":4.0,"s":55,"p":8.5,"u":40.0,"w":"晴","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"石門水庫-靜止","ym":"2025-09","d":"2025-09-02","t":32.0,"o":4.0,"s":55,"p":7.5,"u":40.0,"w":"晴多雲，","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"石門水庫-靜止","ym":"2025-10","d":"2025-10-07","t":32.0,"o":1.5,"s":21,"p":8.5,"u":0.0,"w":"晴天","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"石門水庫-靜止","ym":"2025-11","d":"2025-11-04","t":24.0,"o":4.0,"s":48,"p":7.0,"u":40.0,"w":"晴","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":"前一天11/3下雨"},{"k":"石門水庫-靜止","ym":"2025-12","d":"2025-12-02","t":22.0,"o":4.0,"s":46,"p":7.0,"u":40.0,"w":"天氣晴","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"石門水庫-靜止","ym":"2026-01","d":"2026-01-06","t":16.0,"o":4.0,"s":41,"p":7.5,"u":40.0,"w":"陰天","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"石門水庫-靜止","ym":"2026-02","d":"2026-02-03","t":18.0,"o":4.0,"s":42,"p":8.5,"u":40.0,"w":"晴","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"石門水庫-靜止","ym":"2026-03","d":"2026-03-03","t":18.0,"o":4.0,"s":42,"p":7.5,"u":40.0,"w":"雨天","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"石門水庫-靜止","ym":"2026-04","d":"2026-04-07","t":22.0,"o":4.0,"s":46,"p":7.5,"u":40.0,"w":"短暫陣雨","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"石門水庫-靜止","ym":"2026-05","d":"2026-05-05","t":24.0,"o":4.0,"s":48,"p":7.5,"u":40.0,"w":"陰雨","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"石門水庫-靜止","ym":"2026-06","d":"2026-06-02","t":32.0,"o":2.0,"s":28,"p":7.5,"u":0.0,"w":"晴","st":"調整值","desc":"溶氧：0 → 2（原填 0，顏色介於 0 與 4 之間，取中值 2）；飽和度：0 → 28（改用色卡表重算：溶氧依原則調整後重算）","q":[],"adj":["溶氧 0→2：原填 0，顏色介於 0 與 4 之間，取中值 2","飽和度 0→28：改用色卡表重算：溶氧依原則調整後重算"],"ph":"","note":""},{"k":"石門水庫-靜止","ym":"2026-07","d":"2026-07-07","t":32.0,"o":4.0,"s":55,"p":8.7,"u":40.0,"w":"晴","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"石門水庫-靜止","ym":"2026-08","d":"2026-08-04","t":32.0,"o":4.0,"s":55,"p":8.5,"u":40.0,"w":"晴天","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"石門水庫-靜止","ym":"2026-09","d":"2026-09-01","t":28.0,"o":4.0,"s":51,"p":8.5,"u":40.0,"w":"晴","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"石門水庫-靜止","ym":"2026-10","d":"2026-10-06","t":26.0,"o":4.0,"s":49,"p":8.5,"u":40.0,"w":"多雲時陰","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"翡翠水庫-靜止","ym":"2025-06","d":"2025-06-03","t":24.0,"o":8.0,"s":95,"p":7.0,"u":0.0,"w":"雨天","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"翡翠水庫-靜止","ym":"2025-07","d":"2025-07-01","t":28.0,"o":8.0,"s":102,"p":8.0,"u":0.0,"w":"晴","st":"原始值","desc":"","q":[],"adj":[],"ph":"溶氧過飽和 102%（常見於藻類旺盛）","note":""},{"k":"翡翠水庫-靜止","ym":"2025-08","d":"2025-08-05","t":28.0,"o":8.0,"s":102,"p":7.0,"u":40.0,"w":"晴","st":"原始值","desc":"","q":[],"adj":[],"ph":"溶氧過飽和 102%（常見於藻類旺盛）","note":""},{"k":"翡翠水庫-靜止","ym":"2025-09","d":"2025-09-02","t":28.0,"o":8.0,"s":102,"p":8.0,"u":0.0,"w":"晴時多雲","st":"原始值","desc":"","q":[],"adj":[],"ph":"溶氧過飽和 102%（常見於藻類旺盛）","note":""},{"k":"翡翠水庫-靜止","ym":"2025-10","d":"2025-10-07","t":28.0,"o":4.0,"s":51,"p":8.0,"u":0.0,"w":"晴","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"翡翠水庫-靜止","ym":"2025-11","d":"2025-11-04","t":22.0,"o":4.0,"s":46,"p":7.0,"u":40.0,"w":"陰雨","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"翡翠水庫-靜止","ym":"2025-12","d":"2025-12-03","t":20.0,"o":4.0,"s":44,"p":7.0,"u":0.0,"w":"陰雨","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"翡翠水庫-靜止","ym":"2026-01","d":"2026-01-06","t":16.0,"o":4.0,"s":41,"p":7.0,"u":0.0,"w":"陰","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"翡翠水庫-靜止","ym":"2026-02","d":"2026-02-03","t":16.0,"o":4.0,"s":41,"p":7.0,"u":0.0,"w":"陰","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"翡翠水庫-靜止","ym":"2026-03","d":"2026-03-03","t":18.0,"o":4.0,"s":42,"p":7.0,"u":40.0,"w":"陰雨","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"翡翠水庫-靜止","ym":"2026-04","d":"2026-04-07","t":22.0,"o":4.0,"s":46,"p":7.0,"u":40.0,"w":"雨","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"翡翠水庫-靜止","ym":"2026-05","d":"2026-05-04","t":22.0,"o":2.0,"s":23,"p":7.0,"u":0.0,"w":"雨","st":"調整值","desc":"飽和度：29 → 23（改用色卡表重算：填表人查錯表或不清楚查法）","q":[],"adj":["飽和度 29→23：改用色卡表重算：填表人查錯表或不清楚查法"],"ph":"","note":""},{"k":"翡翠水庫-靜止","ym":"2026-06","d":"2026-06-02","t":28.0,"o":4.0,"s":51,"p":7.0,"u":0.0,"w":"晴時多雲","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"翡翠水庫-靜止","ym":"2026-07","d":"2026-07-08","t":31.0,"o":4.0,"s":55,"p":7.0,"u":0.0,"w":"晴","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"翡翠水庫-靜止","ym":"2026-08","d":"2026-08-05","t":28.0,"o":4.0,"s":51,"p":7.0,"u":0.0,"w":"晴時多雲","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"翡翠水庫-靜止","ym":"2026-09","d":"2026-09-01","t":28.0,"o":4.0,"s":51,"p":7.0,"u":0.0,"w":"晴時多雲","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"翡翠水庫-靜止","ym":"2026-10","d":"2026-10-06","t":24.0,"o":4.0,"s":48,"p":6.0,"u":40.0,"w":"短暫陣雨","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"北水特-流動","ym":"2025-06","d":"2025-06-03","t":24.0,"o":8.0,"s":95.0,"p":7.5,"u":0.0,"w":"陣雨","st":"待查核","desc":"待查核：缺 GPS 座標，地圖暫用推估位置","q":[["缺 GPS 座標，地圖暫用推估位置","請場域提供採樣點座標"]],"adj":[],"ph":"","note":""},{"k":"北水特-流動","ym":"2025-07","d":"2025-07-01","t":26.0,"o":7.5,"s":98.0,"p":8.0,"u":0.0,"w":"晴","st":"待查核","desc":"待查核：缺 GPS 座標，地圖暫用推估位置","q":[["缺 GPS 座標，地圖暫用推估位置","請場域提供採樣點座標"]],"adj":[],"ph":"","note":""},{"k":"北水特-流動","ym":"2025-08","d":"2025-08-05","t":26.0,"o":7.5,"s":95.0,"p":7.0,"u":10.0,"w":"晴","st":"待查核","desc":"待查核：缺 GPS 座標，地圖暫用推估位置","q":[["缺 GPS 座標，地圖暫用推估位置","請場域提供採樣點座標"]],"adj":[],"ph":"","note":""},{"k":"北水特-流動","ym":"2025-09","d":"2025-09-04","t":26.0,"o":7.0,"s":90.0,"p":7.0,"u":0.0,"w":"晴","st":"待查核","desc":"待查核：調查日期晚於提交日期","q":[["調查日期晚於提交日期","確認實際調查日"]],"adj":[],"ph":"","note":""},{"k":"北水特-流動","ym":"2025-10","d":"2025-10-07","t":22.5,"o":6.5,"s":84.0,"p":7.0,"u":0.0,"w":"晴","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"北水特-流動","ym":"2025-11","d":"2025-11-05","t":21.0,"o":6.0,"s":80.0,"p":7.5,"u":10.0,"w":"陰天","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"北水特-流動","ym":"2025-12","d":"2025-12-02","t":22.0,"o":4.0,"s":46.0,"p":7.5,"u":0.0,"w":"晴","st":"待查核","desc":"待查核：填表人註記：試劑可能有問題","q":[["填表人註記：試劑可能有問題","列入試劑檢核討論"]],"adj":[],"ph":"","note":"溶氧試劑可能有潮濕"},{"k":"北水特-流動","ym":"2026-01","d":"2026-01-06","t":14.0,"o":7.0,"s":71.0,"p":7.5,"u":10.0,"w":"陰雨","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"北水特-流動","ym":"2026-02","d":"2026-02-03","t":16.0,"o":7.0,"s":71.0,"p":7.0,"u":0.0,"w":"陰","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"北水特-流動","ym":"2026-03","d":"2026-03-03","t":20.0,"o":7.0,"s":66.0,"p":7.0,"u":0.0,"w":"陰雨","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"北水特-流動","ym":"2026-04","d":"2026-04-07","t":20.0,"o":7.0,"s":66.0,"p":7.5,"u":0.0,"w":"陰雨","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"北水特-流動","ym":"2026-05","d":"2026-05-05","t":20.0,"o":6.0,"s":64.0,"p":7.5,"u":40.0,"w":"雨","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"北水特-流動","ym":"2026-06","d":"2026-06-02","t":26.0,"o":6.0,"s":75.0,"p":7.0,"u":0.0,"w":"晴","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"北水特-流動","ym":"2026-07","d":"2026-07-07","t":26.0,"o":2.0,"s":25.0,"p":7.5,"u":10.0,"w":"晴","st":"待查核","desc":"待查核：填表人註記：試劑可能有問題","q":[["填表人註記：試劑可能有問題","列入試劑檢核討論"]],"adj":[],"ph":"","note":"溶氧測質異常，可能是試劑的關係"},{"k":"北水特-流動","ym":"2026-10","d":"2026-10-06","t":24.0,"o":6.5,"s":75.0,"p":7.0,"u":10.0,"w":"陰雨","st":"待查核","desc":"待查核：改版表單的兩組數值不一致","q":[["改版表單的兩組數值不一致","確認以哪組為準"]],"adj":[],"ph":"","note":""},{"k":"東眼山-流動","ym":"2025-01","d":"2025-01-07","t":12.0,"o":8.0,"s":74,"p":7.0,"u":0.0,"w":"晴","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"東眼山-流動","ym":"2025-02","d":"2025-02-04","t":10.0,"o":8.0,"s":71,"p":7.0,"u":40.0,"w":"晴","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"東眼山-流動","ym":"2025-03","d":"2025-03-04","t":16.0,"o":8.0,"s":81,"p":7.0,"u":0.0,"w":"短暫陣雨或雷雨","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"東眼山-流動","ym":"2025-04","d":"2025-04-01","t":10.0,"o":8.0,"s":71,"p":7.0,"u":40.0,"w":"短暫雨","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"東眼山-流動","ym":"2025-05","d":"2025-05-06","t":18.0,"o":4.0,"s":42,"p":7.0,"u":0.0,"w":"陰","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"東眼山-流動","ym":"2025-06","d":"2025-06-03","t":22.0,"o":4.0,"s":46,"p":7.0,"u":0.0,"w":"短暫陣雨","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"東眼山-流動","ym":"2025-07","d":"2025-07-01","t":24.0,"o":8.0,"s":95,"p":7.0,"u":0.0,"w":"多雲無雨","st":"待查核","desc":"待查核：採樣位置與平常不同","q":[["採樣位置與平常不同","確認是否換點"]],"adj":[],"ph":"","note":""},{"k":"東眼山-流動","ym":"2025-08","d":"2025-08-05","t":22.0,"o":8.0,"s":92,"p":8.0,"u":0.0,"w":"雨","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"東眼山-流動","ym":"2025-10","d":"2025-10-07","t":22.0,"o":4.0,"s":46,"p":7.0,"u":0.0,"w":"晴天","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"東眼山-流動","ym":"2025-11","d":"2025-11-04","t":18.0,"o":4.0,"s":42,"p":6.0,"u":0.0,"w":"陰天多雲，偶有陽光","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"東眼山-流動","ym":"2025-12","d":"2025-12-02","t":18.0,"o":8.0,"s":84,"p":6.0,"u":0.0,"w":"晴時多雲","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"東眼山-流動","ym":"2026-01","d":"2026-01-06","t":8.0,"o":4.0,"s":34,"p":6.0,"u":0.0,"w":"雨天","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"東眼山-流動","ym":"2026-02","d":"2026-02-03","t":10.0,"o":4.0,"s":35,"p":6.0,"u":0.0,"w":"晴時多雲","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"東眼山-流動","ym":"2026-03","d":"2026-03-03","t":14.0,"o":4.0,"s":39,"p":7.0,"u":40.0,"w":"短暫陣雨","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"東眼山-流動","ym":"2026-04","d":"2026-04-07","t":18.0,"o":4.0,"s":42,"p":6.0,"u":0.0,"w":"短暫陣雨","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"東眼山-流動","ym":"2026-05","d":"2026-05-05","t":18.0,"o":4.0,"s":42,"p":7.0,"u":40.0,"w":"短暫陣雨","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"東眼山-流動","ym":"2026-06","d":"2026-06-02","t":22.0,"o":4.0,"s":46,"p":7.0,"u":0.0,"w":"晴","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"東眼山-流動","ym":"2026-08","d":"2026-08-04","t":22.0,"o":4.0,"s":46,"p":7.0,"u":0.0,"w":"晴時多雲","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"東眼山-流動","ym":"2026-09","d":"2026-09-01","t":22.0,"o":4.0,"s":46,"p":7.0,"u":0.0,"w":"陰天","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"東眼山-流動","ym":"2026-10","d":"2026-10-06","t":20.0,"o":4.0,"s":44,"p":7.0,"u":0.0,"w":"多雲時陰","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"內雙溪-流動","ym":"2025-01","d":"2025-01-07","t":14.0,"o":8.0,"s":78,"p":7.0,"u":0.0,"w":"晴時多雲","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"內雙溪-流動","ym":"2025-02","d":"2025-02-04","t":12.0,"o":8.0,"s":74,"p":7.0,"u":100.0,"w":"晴時多雲","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"內雙溪-流動","ym":"2025-03","d":"2025-03-04","t":18.0,"o":8.0,"s":84,"p":7.0,"u":100.0,"w":"多雲時陰短暫陣雨","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"內雙溪-流動","ym":"2025-04","d":"2025-04-01","t":16.0,"o":8.0,"s":81,"p":7.0,"u":40.0,"w":"陰時陣雨","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":"連續4天下雨天，溪水湍急溪水量大水流速快"},{"k":"內雙溪-流動","ym":"2025-05","d":"2025-05-06","t":22.0,"o":4.0,"s":46,"p":7.0,"u":0.0,"w":"晴時多雲","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"內雙溪-流動","ym":"2025-06","d":"2025-06-03","t":22.0,"o":4.0,"s":46,"p":8.0,"u":40.0,"w":"多辰短暫陣雷雨","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"內雙溪-流動","ym":"2025-07","d":"2025-07-01","t":26.0,"o":4.0,"s":49,"p":8.0,"u":40.0,"w":"多雲時晴","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":"水量明顯較上個月少"},{"k":"內雙溪-流動","ym":"2025-08","d":"2025-08-05","t":26.0,"o":8.0,"s":99,"p":8.0,"u":40.0,"w":"晴時多雲，午後雷陣雨","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"內雙溪-流動","ym":"2025-09","d":"2025-09-02","t":26.0,"o":8.0,"s":99,"p":8.0,"u":40.0,"w":"晴時多雲，帶零星小雨","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"內雙溪-流動","ym":"2025-10","d":"2025-10-07","t":26.0,"o":4.0,"s":49,"p":7.0,"u":40.0,"w":"晴時多雲","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"內雙溪-流動","ym":"2025-11","d":"2025-11-06","t":22.0,"o":4.0,"s":46,"p":8.0,"u":40.0,"w":"晴時多雲短暫陣雨.","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"內雙溪-流動","ym":"2025-12","d":"2025-12-02","t":20.0,"o":4.0,"s":44,"p":8.0,"u":0.0,"w":"晴時多雲","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"內雙溪-流動","ym":"2026-01","d":"2026-01-06","t":14.0,"o":4.0,"s":39,"p":7.0,"u":40.0,"w":"多雲陰偶爾飄雨","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"內雙溪-流動","ym":"2026-02","d":"2026-02-03","t":18.0,"o":4.0,"s":42,"p":7.5,"u":40.0,"w":"晴時多雲","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"內雙溪-流動","ym":"2026-03","d":"2026-03-03","t":16.0,"o":4.0,"s":41,"p":7.0,"u":40.0,"w":"濕冷陣雨","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"內雙溪-流動","ym":"2026-04","d":"2026-04-07","t":18.0,"o":8.0,"s":84,"p":8.0,"u":80.0,"w":"陰天有間隙性強降雨","st":"調整值","desc":"飽和度：68 → 84（改用色卡表重算：填表人查錯表或不清楚查法）","q":[],"adj":["飽和度 68→84：改用色卡表重算：填表人查錯表或不清楚查法"],"ph":"","note":""},{"k":"內雙溪-流動","ym":"2026-05","d":"2026-05-05","t":20.0,"o":4.0,"s":44,"p":8.0,"u":100.0,"w":"陰天持續降雨","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"內雙溪-流動","ym":"2026-06","d":"2026-06-02","t":28.0,"o":4.0,"s":51,"p":8.0,"u":40.0,"w":"晴時多雲","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"內雙溪-流動","ym":"2026-07","d":"2026-07-07","t":26.0,"o":4.0,"s":49,"p":7.0,"u":0.0,"w":"晴時多雲，午後雷陣雨","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"內雙溪-流動","ym":"2026-08","d":"2026-08-04","t":28.0,"o":4.0,"s":51,"p":7.0,"u":40.0,"w":"晴時多雲","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"內雙溪-流動","ym":"2026-09","d":"2026-09-01","t":24.0,"o":4.0,"s":48,"p":8.0,"u":40.0,"w":"晴時多雲","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"內雙溪-流動","ym":"2026-10","d":"2026-10-06","t":20.0,"o":4.0,"s":44,"p":7.0,"u":40.0,"w":"陰天細雨","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"內雙溪-靜止","ym":"2025-05","d":"2025-05-06","t":24.0,"o":8.0,"s":95,"p":7.0,"u":40.0,"w":"晴時多雲","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"內雙溪-靜止","ym":"2025-06","d":"2025-06-03","t":26.0,"o":8.0,"s":99,"p":7.0,"u":40.0,"w":"多雲陰短暫陣雨","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":"內雙溪台灣池旁"},{"k":"內雙溪-靜止","ym":"2025-07","d":"2025-07-01","t":32.0,"o":4.0,"s":55,"p":7.0,"u":40.0,"w":"晴時多雲","st":"調整值","desc":"溶氧：40 → 4（誤植（飽和度 55% 對應約 4 ppm））","q":[],"adj":["溶氧 40→4：誤植（飽和度 55% 對應約 4 ppm）"],"ph":"","note":""},{"k":"內雙溪-靜止","ym":"2025-08","d":"2025-08-05","t":30.0,"o":8.0,"s":106,"p":7.0,"u":100.0,"w":"晴時多雲, 即午後雷陣雨","st":"原始值","desc":"","q":[],"adj":[],"ph":"溶氧過飽和 106%（常見於藻類旺盛）","note":""},{"k":"內雙溪-靜止","ym":"2025-09","d":"2025-09-02","t":28.0,"o":4.0,"s":51,"p":7.0,"u":40.0,"w":"晴時多雲，帶零星小雨","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"內雙溪-靜止","ym":"2025-10","d":"2025-10-07","t":28.0,"o":7.0,"s":89,"p":7.0,"u":40.0,"w":"晴時多雲","st":"調整值","desc":"飽和度：51 → 89（改用色卡表重算：填表人查錯表或不清楚查法）","q":[],"adj":["飽和度 51→89：改用色卡表重算：填表人查錯表或不清楚查法"],"ph":"","note":""},{"k":"內雙溪-靜止","ym":"2025-11","d":"2025-11-06","t":24.0,"o":4.0,"s":48,"p":7.0,"u":40.0,"w":"晴時多雲、短暫陣雨","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"內雙溪-靜止","ym":"2025-12","d":"2025-12-02","t":22.0,"o":4.0,"s":46,"p":7.0,"u":40.0,"w":"晴時多雲、","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"內雙溪-靜止","ym":"2026-01","d":"2026-01-06","t":14.0,"o":4.0,"s":39,"p":7.0,"u":40.0,"w":"多雲偶爾飄雨","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":"內雙溪自然中心臺灣池"},{"k":"內雙溪-靜止","ym":"2026-02","d":"2026-02-03","t":20.0,"o":4.0,"s":44,"p":7.0,"u":0.0,"w":"晴時多雲","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":"內雙溪自然中心臺灣池"},{"k":"內雙溪-靜止","ym":"2026-03","d":"2026-03-03","t":18.0,"o":4.0,"s":42,"p":7.0,"u":40.0,"w":"濕冷降雨","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"內雙溪-靜止","ym":"2026-04","d":"2026-04-07","t":18.0,"o":4.0,"s":42,"p":7.0,"u":80.0,"w":"陰天有間隙性強降雨","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"內雙溪-靜止","ym":"2026-05","d":"2026-05-05","t":20.0,"o":4.0,"s":44,"p":7.0,"u":40.0,"w":"陰天持續降雨","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"內雙溪-靜止","ym":"2026-06","d":"2026-06-02","t":28.0,"o":4.0,"s":51,"p":7.0,"u":40.0,"w":"晴時多雲","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"內雙溪-靜止","ym":"2026-07","d":"2026-07-07","t":28.0,"o":4.0,"s":51,"p":7.0,"u":40.0,"w":"晴時多雲，午後雷陣雨","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"內雙溪-靜止","ym":"2026-08","d":"2026-08-04","t":32.0,"o":4.0,"s":55,"p":7.0,"u":40.0,"w":"晴時多雲","st":"調整值","desc":"溶氧：（空白） → 4（原表空白，經檢測同仁確認）","q":[],"adj":["溶氧 （空白）→4：原表空白，經檢測同仁確認"],"ph":"","note":""},{"k":"內雙溪-靜止","ym":"2026-09","d":"2026-09-01","t":28.0,"o":8.0,"s":102,"p":7.0,"u":40.0,"w":"晴時多雲","st":"原始值","desc":"","q":[],"adj":[],"ph":"溶氧過飽和 102%（常見於藻類旺盛）","note":""},{"k":"內雙溪-靜止","ym":"2026-10","d":"2026-10-06","t":22.0,"o":4.0,"s":46,"p":6.0,"u":40.0,"w":"陰天細雨","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"老街溪-流動","ym":"2025-01","d":"2025-01-07","t":16.0,"o":2.0,"s":21,"p":8.0,"u":40.0,"w":"晴時多雲","st":"調整值","desc":"溶氧：0-4ppm → 2（顏色介於 0 與 4 之間，取中值 2）；飽和度：30 → 21（改用色卡表重算：溶氧依原則調整後重算）","q":[],"adj":["溶氧 0-4ppm→2：顏色介於 0 與 4 之間，取中值 2","飽和度 30→21：改用色卡表重算：溶氧依原則調整後重算"],"ph":"","note":""},{"k":"老街溪-流動","ym":"2025-02","d":"2025-02-04","t":14.0,"o":2.0,"s":20,"p":7.0,"u":40.0,"w":"多雲到晴","st":"調整值","desc":"溶氧：0-4 ppm → 2（顏色介於 0 與 4 之間，取中值 2）","q":[],"adj":["溶氧 0-4 ppm→2：顏色介於 0 與 4 之間，取中值 2"],"ph":"","note":""},{"k":"老街溪-流動","ym":"2025-03","d":"2025-03-04","t":21.0,"o":2.0,"s":23,"p":7.0,"u":100.0,"w":"雨天","st":"調整值","desc":"溶氧：0-4 ppm → 2（顏色介於 0 與 4 之間，取中值 2）；飽和度：30 → 23（改用色卡表重算：溶氧依原則調整後重算）","q":[],"adj":["溶氧 0-4 ppm→2：顏色介於 0 與 4 之間，取中值 2","飽和度 30→23：改用色卡表重算：溶氧依原則調整後重算"],"ph":"","note":"今天雨好大。"},{"k":"老街溪-流動","ym":"2025-04","d":"2025-04-01","t":15.0,"o":2.0,"s":21,"p":7.0,"u":70.0,"w":"雨天","st":"調整值","desc":"溶氧：0~4 → 2（顏色介於 0 與 4 之間，取中值 2）；濁度：40~100 JTU → 70（區間值取中值）；飽和度：40 → 21（改用色卡表重算：溶氧依原則調整後重算）","q":[],"adj":["溶氧 0~4→2：顏色介於 0 與 4 之間，取中值 2","濁度 40~100 JTU→70：區間值取中值","飽和度 40→21：改用色卡表重算：溶氧依原則調整後重算"],"ph":"","note":""},{"k":"老街溪-流動","ym":"2025-05","d":"2025-05-06","t":26.5,"o":2.0,"s":25,"p":8.0,"u":40.0,"w":"晴時多雲","st":"調整值","desc":"溶氧：0-4ppm → 2（顏色介於 0 與 4 之間，取中值 2）","q":[],"adj":["溶氧 0-4ppm→2：顏色介於 0 與 4 之間，取中值 2"],"ph":"","note":""},{"k":"老街溪-流動","ym":"2025-06","d":"2025-06-03","t":28.0,"o":2.0,"s":26,"p":7.0,"u":20.0,"w":"多雲陰天","st":"調整值","desc":"溶氧：0-4 → 2（顏色介於 0 與 4 之間，取中值 2）；濁度：0-40 → 20（區間值取中值）；飽和度：45 → 26（改用色卡表重算：溶氧依原則調整後重算）","q":[],"adj":["溶氧 0-4→2：顏色介於 0 與 4 之間，取中值 2","濁度 0-40→20：區間值取中值","飽和度 45→26：改用色卡表重算：溶氧依原則調整後重算"],"ph":"","note":""},{"k":"老街溪-流動","ym":"2025-07","d":"2025-07-01","t":30.0,"o":2.0,"s":27,"p":7.0,"u":70.0,"w":"晴時多雲","st":"調整值","desc":"溶氧：0-4 → 2（顏色介於 0 與 4 之間，取中值 2）；濁度：40-100 → 70（區間值取中值）","q":[],"adj":["溶氧 0-4→2：顏色介於 0 與 4 之間，取中值 2","濁度 40-100→70：區間值取中值"],"ph":"","note":""},{"k":"老街溪-流動","ym":"2025-08","d":"2025-08-05","t":29.0,"o":2.0,"s":27,"p":7.0,"u":20.0,"w":"多雲","st":"調整值","desc":"溶氧：0-4 → 2（顏色介於 0 與 4 之間，取中值 2）；濁度：0-40 → 20（區間值取中值）","q":[],"adj":["溶氧 0-4→2：顏色介於 0 與 4 之間，取中值 2","濁度 0-40→20：區間值取中值"],"ph":"","note":""},{"k":"老街溪-流動","ym":"2025-09","d":"2025-09-02","t":30.0,"o":2.0,"s":27,"p":8.0,"u":20.0,"w":"晴時多雲","st":"調整值","desc":"溶氧：0-4 → 2（顏色介於 0 與 4 之間，取中值 2）；濁度：0-40 → 20（區間值取中值）","q":[],"adj":["溶氧 0-4→2：顏色介於 0 與 4 之間，取中值 2","濁度 0-40→20：區間值取中值"],"ph":"","note":""},{"k":"老街溪-流動","ym":"2025-10","d":"2025-10-07","t":30.0,"o":2.0,"s":27,"p":8.0,"u":40.0,"w":"晴時多雲","st":"調整值","desc":"溶氧：0-4 ppm → 2（顏色介於 0 與 4 之間，取中值 2）；飽和度：45 → 27（改用色卡表重算：溶氧依原則調整後重算）","q":[],"adj":["溶氧 0-4 ppm→2：顏色介於 0 與 4 之間，取中值 2","飽和度 45→27：改用色卡表重算：溶氧依原則調整後重算"],"ph":"","note":""},{"k":"老街溪-流動","ym":"2025-11","d":"2025-11-04","t":22.0,"o":2.0,"s":23,"p":8.0,"u":40.0,"w":"陰天","st":"調整值","desc":"溶氧：0-4 → 2（顏色介於 0 與 4 之間，取中值 2）；飽和度：40 → 23（改用色卡表重算：溶氧依原則調整後重算）","q":[],"adj":["溶氧 0-4→2：顏色介於 0 與 4 之間，取中值 2","飽和度 40→23：改用色卡表重算：溶氧依原則調整後重算"],"ph":"","note":""},{"k":"老街溪-流動","ym":"2025-12","d":"2025-12-02","t":23.0,"o":4.0,"s":48,"p":8.0,"u":40.0,"w":"晴時多雲但剛下過大雨","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"老街溪-流動","ym":"2026-01","d":"2026-01-06","t":16.0,"o":2.0,"s":21,"p":7.0,"u":40.0,"w":"陰天多雲","st":"調整值","desc":"溶氧：0-4ppm → 2（顏色介於 0 與 4 之間，取中值 2）；飽和度：30 → 21（改用色卡表重算：溶氧依原則調整後重算）","q":[],"adj":["溶氧 0-4ppm→2：顏色介於 0 與 4 之間，取中值 2","飽和度 30→21：改用色卡表重算：溶氧依原則調整後重算"],"ph":"","note":""},{"k":"老街溪-流動","ym":"2026-02","d":"2026-02-03","t":16.0,"o":2.0,"s":21,"p":7.0,"u":40.0,"w":"晴","st":"調整值","desc":"溶氧：0-4 → 2（顏色介於 0 與 4 之間，取中值 2）；飽和度：36 → 21（改用色卡表重算：溶氧依原則調整後重算）","q":[],"adj":["溶氧 0-4→2：顏色介於 0 與 4 之間，取中值 2","飽和度 36→21：改用色卡表重算：溶氧依原則調整後重算"],"ph":"","note":""},{"k":"老街溪-流動","ym":"2026-03","d":"2026-03-03","t":18.0,"o":2.0,"s":21,"p":7.0,"u":100.0,"w":"短暫陣雨","st":"調整值","desc":"溶氧：0-4 ppm → 2（顏色介於 0 與 4 之間，取中值 2）；飽和度：30 → 21（改用色卡表重算：溶氧依原則調整後重算）","q":[],"adj":["溶氧 0-4 ppm→2：顏色介於 0 與 4 之間，取中值 2","飽和度 30→21：改用色卡表重算：溶氧依原則調整後重算"],"ph":"","note":""},{"k":"老街溪-流動","ym":"2026-04","d":"2026-04-07","t":22.0,"o":2.0,"s":23,"p":6.0,"u":100.0,"w":"雨天","st":"調整值","desc":"溶氧：0-4 → 2（顏色介於 0 與 4 之間，取中值 2）；飽和度：30 → 23（改用色卡表重算：溶氧依原則調整後重算）","q":[],"adj":["溶氧 0-4→2：顏色介於 0 與 4 之間，取中值 2","飽和度 30→23：改用色卡表重算：溶氧依原則調整後重算"],"ph":"","note":""},{"k":"老街溪-流動","ym":"2026-05","d":"2026-05-05","t":22.0,"o":2.0,"s":23,"p":7.0,"u":100.0,"w":"陰天，下雨","st":"調整值","desc":"溶氧：0-4ppm → 2（顏色介於 0 與 4 之間，取中值 2）；飽和度：30 → 23（改用色卡表重算：溶氧依原則調整後重算）","q":[],"adj":["溶氧 0-4ppm→2：顏色介於 0 與 4 之間，取中值 2","飽和度 30→23：改用色卡表重算：溶氧依原則調整後重算"],"ph":"","note":""},{"k":"老街溪-流動","ym":"2026-06","d":"2026-06-02","t":30.0,"o":2.0,"s":27,"p":8.0,"u":70.0,"w":"晴天","st":"調整值","desc":"溶氧：0-4 → 2（顏色介於 0 與 4 之間，取中值 2）；濁度：40-100 → 70（區間值取中值）","q":[],"adj":["溶氧 0-4→2：顏色介於 0 與 4 之間，取中值 2","濁度 40-100→70：區間值取中值"],"ph":"","note":""},{"k":"老街溪-流動","ym":"2026-07","d":"2026-07-07","t":28.0,"o":2.0,"s":26,"p":7.0,"u":40.0,"w":"晴","st":"調整值","desc":"溶氧：0-4ppm → 2（顏色介於 0 與 4 之間，取中值 2）；飽和度：48 → 26（改用色卡表重算：溶氧依原則調整後重算）","q":[],"adj":["溶氧 0-4ppm→2：顏色介於 0 與 4 之間，取中值 2","飽和度 48→26：改用色卡表重算：溶氧依原則調整後重算"],"ph":"","note":""},{"k":"老街溪-流動","ym":"2026-08","d":"2026-08-04","t":26.0,"o":4.0,"s":49,"p":7.0,"u":70.0,"w":"晴","st":"調整值","desc":"濁度：40-100 → 70（區間值取中值）","q":[],"adj":["濁度 40-100→70：區間值取中值"],"ph":"","note":""},{"k":"老街溪-流動","ym":"2026-09","d":"2026-09-01","t":30.0,"o":2.0,"s":27,"p":7.0,"u":20.0,"w":"晴","st":"調整值","desc":"溶氧：0-4 → 2（顏色介於 0 與 4 之間，取中值 2）；飽和度：45 → 27（改用色卡表重算：溶氧依原則調整後重算）","q":[],"adj":["溶氧 0-4→2：顏色介於 0 與 4 之間，取中值 2","飽和度 45→27：改用色卡表重算：溶氧依原則調整後重算"],"ph":"","note":""},{"k":"老街溪-流動","ym":"2026-10","d":"2026-10-06","t":26.0,"o":2.0,"s":25,"p":7.0,"u":20.0,"w":"晴","st":"調整值","desc":"溶氧：0-4 → 2（顏色介於 0 與 4 之間，取中值 2）；濁度：0-40 → 20（區間值取中值）；飽和度：40 → 25（改用色卡表重算：溶氧依原則調整後重算）","q":[],"adj":["溶氧 0-4→2：顏色介於 0 與 4 之間，取中值 2","濁度 0-40→20：區間值取中值","飽和度 40→25：改用色卡表重算：溶氧依原則調整後重算"],"ph":"","note":""},{"k":"友達-靜止","ym":"2025-01","d":"2025-01-07","t":18.0,"o":8.0,"s":84,"p":7.0,"u":40.0,"w":"陰時多雲","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":"濕地"},{"k":"友達-靜止","ym":"2025-02","d":"2025-02-04","t":6.0,"o":8.0,"s":64,"p":7.0,"u":40.0,"w":"局部多雲","st":"待查核","desc":"待查核：水溫明顯偏低","q":[["水溫明顯偏低","確認量測是否正確"]],"adj":[],"ph":"","note":"更正溶氧資訊，請以溶氧濃度8ppm資訊為正確，謝謝"},{"k":"友達-靜止","ym":"2025-03","d":"2025-03-04","t":24.0,"o":8.0,"s":95,"p":7.0,"u":100.0,"w":"晴時多雲（前一晚有大雷雨）","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"友達-靜止","ym":"2025-04","d":"2025-04-01","t":14.0,"o":8.0,"s":78,"p":6.0,"u":100.0,"w":"雨天","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"友達-靜止","ym":"2025-05","d":"2025-05-06","t":28.0,"o":8.0,"s":102,"p":7.0,"u":40.0,"w":"晴天少雲","st":"調整值","desc":"調查日期：2025/6/5 → 2025-05-06（月日顛倒（提交時間為 2025/5/6））","q":[],"adj":["調查日期 2025/6/5→2025-05-06：月日顛倒（提交時間為 2025/5/6）"],"ph":"溶氧過飽和 102%（常見於藻類旺盛）","note":"上筆數據填寫有誤，請以此筆作為紀錄，謝謝🙏"},{"k":"友達-靜止","ym":"2025-06","d":"2025-06-03","t":26.0,"o":8.0,"s":99,"p":7.0,"u":40.0,"w":"雨天","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"友達-靜止","ym":"2025-07","d":"2025-07-01","t":30.0,"o":4.0,"s":53,"p":10.0,"u":40.0,"w":"晴天","st":"原始值","desc":"","q":[],"adj":[],"ph":"pH 10 達警示門檻；填表人觀察到大量藻類","note":"水中長滿大量藻類"},{"k":"友達-靜止","ym":"2025-08","d":"2025-08-05","t":28.0,"o":8.0,"s":102,"p":7.0,"u":40.0,"w":"陰天","st":"原始值","desc":"","q":[],"adj":[],"ph":"溶氧過飽和 102%（常見於藻類旺盛）","note":""},{"k":"友達-靜止","ym":"2025-09","d":"2025-09-02","t":28.0,"o":4.0,"s":51,"p":7.0,"u":40.0,"w":"晴時多雲","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"友達-靜止","ym":"2025-10","d":"2025-10-07","t":32.0,"o":4.0,"s":55,"p":9.0,"u":40.0,"w":"晴，無雲","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":"連日晴天"},{"k":"友達-靜止","ym":"2025-11","d":"2025-11-04","t":24.0,"o":4.0,"s":48,"p":10.0,"u":100.0,"w":"陰天，風大，無雨","st":"原始值","desc":"","q":[],"adj":[],"ph":"pH 10 達警示門檻","note":""},{"k":"友達-靜止","ym":"2025-12","d":"2025-12-02","t":20.0,"o":4.0,"s":44,"p":7.0,"u":40.0,"w":"晴","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"友達-靜止","ym":"2026-01","d":"2026-01-06","t":14.0,"o":4.0,"s":39,"p":7.0,"u":0.0,"w":"陰天、偶有小雨","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"友達-靜止","ym":"2026-02","d":"2026-02-03","t":14.0,"o":4.0,"s":39,"p":7.0,"u":40.0,"w":"晴時多雲","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"友達-靜止","ym":"2026-03","d":"2026-03-03","t":18.0,"o":4.0,"s":42,"p":7.0,"u":40.0,"w":"陰天偶雨","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"友達-靜止","ym":"2026-04","d":"2026-04-07","t":22.0,"o":4.0,"s":46,"p":7.0,"u":40.0,"w":"陰雨","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":"連任陰雨天"},{"k":"友達-靜止","ym":"2026-05","d":"2026-05-05","t":20.0,"o":4.0,"s":44,"p":7.0,"u":100.0,"w":"陰雨天","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"友達-靜止","ym":"2026-06","d":"2026-06-02","t":30.0,"o":2.0,"s":27,"p":9.0,"u":40.0,"w":"晴天，熱。藻類很多","st":"調整值","desc":"溶氧：0 → 2（原填 0，顏色介於 0 與 4 之間，取中值 2）；飽和度：0 → 27（改用色卡表重算：溶氧依原則調整後重算）","q":[],"adj":["溶氧 0→2：原填 0，顏色介於 0 與 4 之間，取中值 2","飽和度 0→27：改用色卡表重算：溶氧依原則調整後重算"],"ph":"填表人觀察到大量藻類","note":"天熱，藻類很多"},{"k":"友達-靜止","ym":"2026-07","d":"2026-07-07","t":34.0,"o":8.0,"s":113,"p":10.0,"u":40.0,"w":"大晴天，炎熱","st":"原始值","desc":"","q":[],"adj":[],"ph":"溶氧過飽和 113%（常見於藻類旺盛）；pH 10 達警示門檻；填表人觀察到大量藻類","note":"水中藻類很多很多"},{"k":"關渡-靜止","ym":"2025-01","d":"2025-01-07","t":16.0,"o":4.0,"s":41,"p":7.0,"u":20.0,"w":"陰天","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"關渡-靜止","ym":"2025-02","d":"2025-02-04","t":14.0,"o":4.0,"s":39,"p":7.0,"u":40.0,"w":"陰天","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"關渡-靜止","ym":"2025-04","d":"2025-04-01","t":14.0,"o":4.0,"s":39,"p":7.0,"u":40.0,"w":"陰天短暫陣雨","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"關渡-靜止","ym":"2025-05","d":"2025-05-06","t":27.0,"o":2.0,"s":26,"p":7.0,"u":60.0,"w":"陰天","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"關渡-靜止","ym":"2025-06","d":"2025-06-03","t":26.0,"o":4.0,"s":49,"p":7.0,"u":40.0,"w":"小雨","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"關渡-靜止","ym":"2025-07","d":"2025-07-01","t":32.0,"o":2.0,"s":28,"p":7.0,"u":40.0,"w":"晴天","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"關渡-靜止","ym":"2025-08","d":"2025-08-05","t":30.0,"o":2.0,"s":27,"p":7.0,"u":40.0,"w":"陰天","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"關渡-靜止","ym":"2025-10","d":"2025-10-07","t":30.0,"o":2.0,"s":27,"p":7.0,"u":40.0,"w":"晴天","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"關渡-靜止","ym":"2025-11","d":"2025-11-04","t":22.0,"o":4.0,"s":46,"p":7.0,"u":100.0,"w":"陰天偶有雨","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"關渡-靜止","ym":"2025-12","d":"2025-12-02","t":24.0,"o":4.0,"s":48,"p":7.0,"u":0.0,"w":"晴天","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"關渡-靜止","ym":"2026-01","d":"2026-01-06","t":14.0,"o":4.0,"s":39,"p":7.0,"u":40.0,"w":"陰天","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"關渡-靜止","ym":"2026-03","d":"2026-03-03","t":18.0,"o":2.0,"s":21,"p":7.0,"u":40.0,"w":"陰、短暫雨","st":"調整值","desc":"飽和度：41 → 21（改用色卡表重算：填表人查錯表或不清楚查法）","q":[],"adj":["飽和度 41→21：改用色卡表重算：填表人查錯表或不清楚查法"],"ph":"","note":""},{"k":"關渡-靜止","ym":"2026-04","d":"2026-04-07","t":22.0,"o":4.0,"s":46,"p":7.0,"u":60.0,"w":"雨天","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"關渡-靜止","ym":"2026-05","d":"2026-05-05","t":22.0,"o":4.0,"s":46,"p":7.0,"u":100.0,"w":"雨","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"關渡-靜止","ym":"2026-08","d":"2026-08-04","t":30.0,"o":2.0,"s":27,"p":7.0,"u":40.0,"w":"晴天","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"桃北水資中心-放流水","ym":"2025-01","d":"2025-01-07","t":23.0,"o":4.0,"s":48,"p":7.0,"u":0.0,"w":"晴","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"桃北水資中心-放流水","ym":"2025-02","d":"2025-02-04","t":13.0,"o":8.0,"s":78,"p":7.0,"u":0.0,"w":"晴 但氣溫偏低","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"桃北水資中心-放流水","ym":"2025-03","d":"2025-03-04","t":22.0,"o":8.0,"s":92,"p":7.0,"u":0.0,"w":"雨","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"桃北水資中心-放流水","ym":"2025-04","d":"2025-04-01","t":12.0,"o":8.0,"s":74,"p":7.0,"u":0.0,"w":"陰時多雲短暫雨","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"桃北水資中心-放流水","ym":"2025-05","d":"2025-05-06","t":26.0,"o":8.0,"s":99,"p":7.0,"u":0.0,"w":"晴","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"桃北水資中心-放流水","ym":"2025-06","d":"2025-06-03","t":24.0,"o":8.0,"s":95,"p":7.0,"u":0.0,"w":"雨","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"桃北水資中心-放流水","ym":"2025-07","d":"2025-07-01","t":32.0,"o":8.0,"s":109,"p":7.0,"u":0.0,"w":"晴","st":"原始值","desc":"","q":[],"adj":[],"ph":"溶氧過飽和 109%（常見於藻類旺盛）","note":""},{"k":"桃北水資中心-放流水","ym":"2025-08","d":"2025-08-05","t":28.0,"o":8.0,"s":102,"p":7.0,"u":0.0,"w":"晴","st":"原始值","desc":"","q":[],"adj":[],"ph":"溶氧過飽和 102%（常見於藻類旺盛）","note":""},{"k":"桃北水資中心-放流水","ym":"2025-09","d":"2025-09-02","t":30.0,"o":8.0,"s":106,"p":7.0,"u":0.0,"w":"陰","st":"原始值","desc":"","q":[],"adj":[],"ph":"溶氧過飽和 106%（常見於藻類旺盛）","note":""},{"k":"桃北水資中心-放流水","ym":"2025-10","d":"2025-10-07","t":30.0,"o":8.0,"s":106,"p":7.0,"u":0.0,"w":"晴","st":"原始值","desc":"","q":[],"adj":[],"ph":"溶氧過飽和 106%（常見於藻類旺盛）","note":""},{"k":"桃北水資中心-放流水","ym":"2025-11","d":"2025-11-04","t":27.0,"o":8.0,"s":102,"p":7.0,"u":0.0,"w":"陰","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"桃北水資中心-放流水","ym":"2025-12","d":"2025-12-02","t":26.0,"o":8.0,"s":99,"p":7.0,"u":0.0,"w":"晴","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"桃北水資中心-放流水","ym":"2026-01","d":"2026-01-06","t":23.0,"o":4.0,"s":48,"p":6.0,"u":0.0,"w":"陰","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"桃北水資中心-放流水","ym":"2026-02","d":"2026-02-03","t":23.0,"o":4.0,"s":48,"p":6.5,"u":0.0,"w":"晴","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"桃北水資中心-放流水","ym":"2026-03","d":"2026-03-03","t":25.35,"o":4.0,"s":49,"p":7.0,"u":0.0,"w":"短暫陣雨","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"桃北水資中心-放流水","ym":"2026-04","d":"2026-04-07","t":25.6,"o":4.0,"s":49,"p":6.5,"u":0.0,"w":"雨","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"桃北水資中心-放流水","ym":"2026-05","d":"2026-05-05","t":27.0,"o":4.0,"s":51,"p":6.3,"u":0.0,"w":"雨","st":"待查核","desc":"待查核：採樣位置與平常不同","q":[["採樣位置與平常不同","確認是否換點"]],"adj":[],"ph":"","note":""},{"k":"桃北水資中心-放流水","ym":"2026-06","d":"2026-06-02","t":29.73,"o":4.0,"s":53,"p":6.73,"u":0.0,"w":"晴朗","st":"待查核","desc":"待查核：水域類型改填「靜止」，疑似換點","q":[["水域類型改填「靜止」，疑似換點","確認是否換點"]],"adj":[],"ph":"","note":""},{"k":"桃北水資中心-放流水","ym":"2026-07","d":"2026-07-07","t":30.57,"o":4.0,"s":53,"p":6.64,"u":0.0,"w":"晴朗","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"桃北水資中心-放流水","ym":"2026-08","d":"2026-08-04","t":31.13,"o":4.0,"s":55,"p":6.9,"u":0.0,"w":"晴","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"桃北水資中心-放流水","ym":"2026-09","d":"2026-09-01","t":30.63,"o":4.0,"s":53,"p":6.74,"u":0.0,"w":"晴時多雲","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""},{"k":"桃北水資中心-放流水","ym":"2026-10","d":"2026-10-06","t":24.25,"o":4.0,"s":48,"p":6.4,"u":0.0,"w":"陰天","st":"原始值","desc":"","q":[],"adj":[],"ph":"","note":""}],"sites":[{"k":"石門水庫-靜止","short":"石門水庫","point":"靜止","site":"石門水庫","cls":"甲類","lat":24.811085,"lng":121.248002,"src":"填報座標中位數"},{"k":"翡翠水庫-靜止","short":"翡翠水庫","point":"靜止","site":"翡翠水庫環境學習中心","cls":"甲類","lat":24.9042423,"lng":121.5639128,"src":"填報座標中位數"},{"k":"北水特-流動","short":"北水特","point":"流動","site":"臺北水源特定區環境教育學習中心","cls":"甲類","lat":24.937,"lng":121.711,"src":"文字描述，座標為推估"},{"k":"東眼山-流動","short":"東眼山","point":"流動","site":"東眼山自然教育中心","cls":"甲類","lat":24.83007811111111,"lng":121.41028955555555,"src":"填報座標中位數"},{"k":"內雙溪-流動","short":"內雙溪","point":"流動","site":"內雙溪自然中心","cls":"乙類","lat":25.116068499999997,"lng":121.5743409,"src":"填報座標中位數"},{"k":"內雙溪-靜止","short":"內雙溪","point":"靜止","site":"內雙溪自然中心","cls":"乙類","lat":25.11638975,"lng":121.577857,"src":"填報座標中位數"},{"k":"老街溪-流動","short":"老街溪","point":"流動","site":"老街溪河川教育中心","cls":"丙類","lat":24.95287,"lng":121.21625,"src":"短網址，以解析結果（老街溪翠堤橋）代入"},{"k":"友達-靜止","short":"友達","point":"靜止","site":"友達光電龍潭廠區水資源教育館","cls":"比照丙類（人工池）","lat":24.8460991,"lng":121.1874203,"src":"填報座標中位數"},{"k":"關渡-靜止","short":"關渡","point":"靜止","site":"關渡自然公園","cls":"丁類","lat":25.11905,"lng":121.4705243,"src":"填報座標中位數"},{"k":"桃北水資中心-放流水","short":"桃北水資中心","point":"放流水","site":"桃園北區水資源回收中心","cls":"放流水標準","lat":25.050211172825925,"lng":121.2578714600402,"src":"填報座標中位數（2026/5 起採樣點移動約 500 m）"}],"months":["2025-01","2025-02","2025-03","2025-04","2025-05","2025-06","2025-07","2025-08","2025-09","2025-10","2025-11","2025-12","2026-01","2026-02","2026-03","2026-04","2026-05","2026-06","2026-07","2026-08","2026-09","2026-10"],"official":{"R1053":{"name":"美都麗橋","river":"老街溪","kind":"河川","cls":"丙","lat":24.87427,"lng":121.2132911,"recs":[{"ym":"2025-01","date":"2025-01-07","temp":15.5,"do":5.3,"sat":54.1,"ph":7.04,"turb":null,"rpi":5.0},{"ym":"2025-02","date":"2025-02-05","temp":16.9,"do":9.5,"sat":100.4,"ph":7.08,"turb":null,"rpi":3.75},{"ym":"2025-03","date":"2025-03-06","temp":16.2,"do":9.0,"sat":93.1,"ph":7.02,"turb":null,"rpi":4.75},{"ym":"2025-04","date":"2025-04-08","temp":20.8,"do":7.5,"sat":86.2,"ph":7.02,"turb":null,"rpi":3.5},{"ym":"2025-05","date":"2025-05-07","temp":22.0,"do":6.3,"sat":74.4,"ph":7.01,"turb":null,"rpi":4.5},{"ym":"2025-06","date":"2025-06-04","temp":23.2,"do":6.7,"sat":81.1,"ph":7.02,"turb":null,"rpi":2.25},{"ym":"2025-07","date":"2025-07-02","temp":29.3,"do":8.8,"sat":117.2,"ph":7.0,"turb":null,"rpi":2.25},{"ym":"2025-08","date":"2025-08-07","temp":27.0,"do":7.3,"sat":93.7,"ph":7.1,"turb":null,"rpi":2.75},{"ym":"2025-09","date":"2025-09-03","temp":27.5,"do":7.8,"sat":100.8,"ph":7.02,"turb":null,"rpi":3.75},{"ym":"2025-10","date":"2025-10-01","temp":26.2,"do":4.3,"sat":53.9,"ph":6.85,"turb":null,"rpi":8.0},{"ym":"2025-11","date":"2025-11-06","temp":22.8,"do":6.9,"sat":82.2,"ph":7.01,"turb":null,"rpi":2.75},{"ym":"2025-12","date":"2025-12-04","temp":18.6,"do":7.5,"sat":81.4,"ph":7.12,"turb":null,"rpi":4.5},{"ym":"2026-01","date":"2026-01-08","temp":16.7,"do":6.2,"sat":64.2,"ph":6.82,"turb":null,"rpi":3.75},{"ym":"2026-02","date":"2026-02-06","temp":19.6,"do":2.5,"sat":27.7,"ph":7.03,"turb":null,"rpi":6.25},{"ym":"2026-03","date":"2026-03-03","temp":17.6,"do":5.8,"sat":62.8,"ph":7.31,"turb":null,"rpi":8.25},{"ym":"2026-04","date":"2026-04-08","temp":21.3,"do":7.6,"sat":88.8,"ph":7.07,"turb":null,"rpi":2.75},{"ym":"2026-05","date":"2026-05-07","temp":23.7,"do":7.6,"sat":91.8,"ph":7.09,"turb":null,"rpi":2.75},{"ym":"2026-06","date":"2026-06-22","temp":25.8,"do":7.5,"sat":94.4,"ph":6.78,"turb":null,"rpi":2.75},{"ym":"2026-07","date":"2026-07-08","temp":27.2,"do":5.0,"sat":64.9,"ph":7.04,"turb":null,"rpi":3.75},{"ym":"2026-08","date":"2026-08-05","temp":27.6,"do":8.4,"sat":109.6,"ph":7.07,"turb":null,"rpi":3.75}]},"R1041":{"name":"三峽河抽水站(取代醒心橋)","river":"三峽河","kind":"河川","cls":"丙","lat":24.8956389,"lng":121.3737769,"recs":[{"ym":"2025-01","date":"2025-01-02","temp":17.2,"do":10.8,"sat":113.7,"ph":8.52,"turb":null,"rpi":1.0},{"ym":"2025-02","date":"2025-02-06","temp":15.3,"do":10.6,"sat":107.2,"ph":8.02,"turb":null,"rpi":1.0},{"ym":"2025-03","date":"2025-03-03","temp":19.8,"do":8.5,"sat":93.8,"ph":7.85,"turb":null,"rpi":1.0},{"ym":"2025-04","date":"2025-04-07","temp":16.5,"do":11.1,"sat":114.4,"ph":7.78,"turb":null,"rpi":1.0},{"ym":"2025-05","date":"2025-05-05","temp":25.7,"do":10.3,"sat":127.6,"ph":8.16,"turb":null,"rpi":1.0},{"ym":"2025-06","date":"2025-06-02","temp":27.8,"do":9.0,"sat":117.3,"ph":8.56,"turb":null,"rpi":1.0},{"ym":"2025-07","date":"2025-07-01","temp":30.6,"do":9.3,"sat":125.2,"ph":8.53,"turb":null,"rpi":1.0},{"ym":"2025-08","date":"2025-08-07","temp":26.8,"do":8.8,"sat":110.9,"ph":8.33,"turb":null,"rpi":1.0},{"ym":"2025-09","date":"2025-09-01","temp":28.1,"do":9.6,"sat":126.6,"ph":8.69,"turb":null,"rpi":1.0},{"ym":"2025-10","date":"2025-10-08","temp":29.0,"do":9.3,"sat":122.0,"ph":8.77,"turb":null,"rpi":1.0},{"ym":"2025-11","date":"2025-11-06","temp":24.3,"do":9.2,"sat":110.9,"ph":7.85,"turb":null,"rpi":1.0},{"ym":"2025-12","date":"2025-12-04","temp":18.4,"do":10.6,"sat":113.0,"ph":8.29,"turb":null,"rpi":1.0},{"ym":"2026-01","date":"2026-01-08","temp":13.4,"do":10.0,"sat":99.5,"ph":7.57,"turb":null,"rpi":1.0},{"ym":"2026-02","date":"2026-02-02","temp":16.2,"do":10.5,"sat":107.2,"ph":8.46,"turb":null,"rpi":1.0},{"ym":"2026-03","date":"2026-03-02","temp":22.3,"do":10.1,"sat":117.4,"ph":8.48,"turb":null,"rpi":1.0},{"ym":"2026-04","date":"2026-04-09","temp":23.8,"do":9.1,"sat":109.4,"ph":8.32,"turb":null,"rpi":1.0},{"ym":"2026-05","date":"2026-05-07","temp":20.6,"do":9.2,"sat":102.8,"ph":7.61,"turb":null,"rpi":1.0},{"ym":"2026-06","date":"2026-06-04","temp":26.6,"do":6.8,"sat":85.4,"ph":7.53,"turb":null,"rpi":1.0},{"ym":"2026-07","date":"2026-07-06","temp":28.0,"do":8.4,"sat":108.3,"ph":8.04,"turb":null,"rpi":1.0},{"ym":"2026-08","date":"2026-08-04","temp":26.4,"do":7.1,"sat":91.8,"ph":7.86,"turb":null,"rpi":1.0}]},"R1003":{"name":"關渡大橋","river":"淡水河本流","kind":"河川","cls":"丁","lat":25.1248169,"lng":121.4572369,"recs":[{"ym":"2025-01","date":"2025-01-03","temp":17.6,"do":3.8,"sat":40.2,"ph":7.11,"turb":null,"rpi":4.0},{"ym":"2025-02","date":"2025-02-07","temp":16.1,"do":6.0,"sat":62.4,"ph":7.2,"turb":null,"rpi":2.75},{"ym":"2025-03","date":"2025-03-04","temp":20.7,"do":3.0,"sat":34.0,"ph":7.08,"turb":null,"rpi":4.0},{"ym":"2025-04","date":"2025-04-08","temp":20.9,"do":4.0,"sat":47.0,"ph":7.28,"turb":null,"rpi":4.0},{"ym":"2025-05","date":"2025-05-06","temp":26.3,"do":4.8,"sat":64.6,"ph":7.65,"turb":null,"rpi":3.25},{"ym":"2025-06","date":"2025-06-03","temp":26.3,"do":1.6,"sat":20.8,"ph":7.28,"turb":null,"rpi":4.25},{"ym":"2025-07","date":"2025-07-02","temp":31.0,"do":5.1,"sat":72.1,"ph":7.51,"turb":null,"rpi":3.25},{"ym":"2025-08","date":"2025-08-08","temp":28.3,"do":1.8,"sat":23.8,"ph":7.06,"turb":null,"rpi":3.75},{"ym":"2025-09","date":"2025-09-02","temp":30.8,"do":4.3,"sat":63.3,"ph":7.54,"turb":null,"rpi":4.0},{"ym":"2025-10","date":"2025-10-09","temp":29.8,"do":2.5,"sat":35.8,"ph":7.28,"turb":null,"rpi":4.75},{"ym":"2025-11","date":"2025-11-07","temp":23.0,"do":6.3,"sat":72.5,"ph":7.19,"turb":null,"rpi":3.25},{"ym":"2025-12","date":"2025-12-05","temp":19.8,"do":4.5,"sat":50.2,"ph":7.2,"turb":null,"rpi":5.0},{"ym":"2026-01","date":"2026-01-09","temp":15.0,"do":5.4,"sat":54.2,"ph":7.57,"turb":null,"rpi":2.75},{"ym":"2026-02","date":"2026-02-03","temp":17.0,"do":4.6,"sat":47.2,"ph":7.09,"turb":null,"rpi":4.0},{"ym":"2026-03","date":"2026-03-03","temp":20.5,"do":4.1,"sat":47.7,"ph":7.38,"turb":null,"rpi":4.0},{"ym":"2026-04","date":"2026-04-10","temp":23.8,"do":3.0,"sat":36.4,"ph":7.19,"turb":null,"rpi":4.75},{"ym":"2026-05","date":"2026-05-08","temp":24.6,"do":2.9,"sat":37.0,"ph":7.16,"turb":null,"rpi":4.0},{"ym":"2026-06","date":"2026-06-07","temp":27.5,"do":2.0,"sat":25.4,"ph":7.16,"turb":null,"rpi":3.75},{"ym":"2026-07","date":"2026-07-07","temp":29.0,"do":4.3,"sat":56.8,"ph":7.23,"turb":null,"rpi":3.25},{"ym":"2026-08","date":"2026-08-05","temp":30.7,"do":4.3,"sat":61.2,"ph":7.36,"turb":null,"rpi":4.0}]},"R1036":{"name":"後池堰","river":"大漢溪","kind":"河川","cls":"乙","lat":24.8241889,"lng":121.251659,"recs":[{"ym":"2025-01","date":"2025-01-02","temp":16.8,"do":8.9,"sat":93.2,"ph":7.84,"turb":null,"rpi":2.25},{"ym":"2025-02","date":"2025-02-06","temp":14.8,"do":9.4,"sat":94.0,"ph":7.91,"turb":null,"rpi":1.0},{"ym":"2025-03","date":"2025-03-03","temp":19.2,"do":9.2,"sat":101.6,"ph":7.2,"turb":null,"rpi":1.5},{"ym":"2025-04","date":"2025-04-07","temp":17.5,"do":9.7,"sat":102.6,"ph":7.22,"turb":null,"rpi":1.0},{"ym":"2025-05","date":"2025-05-05","temp":19.6,"do":9.3,"sat":103.4,"ph":7.38,"turb":null,"rpi":1.0},{"ym":"2025-06","date":"2025-06-02","temp":21.6,"do":8.1,"sat":94.3,"ph":7.43,"turb":null,"rpi":1.0},{"ym":"2025-07","date":"2025-07-01","temp":23.8,"do":7.3,"sat":88.4,"ph":7.6,"turb":null,"rpi":1.0},{"ym":"2025-08","date":"2025-08-07","temp":24.5,"do":6.9,"sat":84.8,"ph":7.86,"turb":null,"rpi":1.0},{"ym":"2025-09","date":"2025-09-01","temp":26.0,"do":8.3,"sat":103.8,"ph":7.9,"turb":null,"rpi":1.0},{"ym":"2025-10","date":"2025-10-08","temp":26.0,"do":6.9,"sat":86.7,"ph":7.59,"turb":null,"rpi":1.5},{"ym":"2025-11","date":"2025-11-06","temp":22.2,"do":8.2,"sat":96.2,"ph":7.39,"turb":null,"rpi":1.5},{"ym":"2025-12","date":"2025-12-04","temp":17.4,"do":9.2,"sat":97.7,"ph":7.87,"turb":null,"rpi":1.0},{"ym":"2026-01","date":"2026-01-08","temp":15.6,"do":8.3,"sat":83.7,"ph":7.97,"turb":null,"rpi":2.25},{"ym":"2026-02","date":"2026-02-02","temp":16.0,"do":9.5,"sat":97.2,"ph":8.08,"turb":null,"rpi":1.0},{"ym":"2026-03","date":"2026-03-02","temp":18.1,"do":9.6,"sat":103.8,"ph":7.94,"turb":null,"rpi":1.0},{"ym":"2026-04","date":"2026-04-09","temp":20.1,"do":8.6,"sat":96.4,"ph":7.96,"turb":null,"rpi":1.0},{"ym":"2026-05","date":"2026-05-07","temp":21.6,"do":7.3,"sat":83.8,"ph":8.12,"turb":null,"rpi":2.25},{"ym":"2026-06","date":"2026-06-04","temp":28.5,"do":8.3,"sat":109.7,"ph":7.65,"turb":null,"rpi":3.25},{"ym":"2026-07","date":"2026-07-06","temp":24.0,"do":7.4,"sat":90.3,"ph":7.48,"turb":null,"rpi":1.5},{"ym":"2026-08","date":"2026-08-04","temp":26.2,"do":8.7,"sat":111.8,"ph":7.94,"turb":null,"rpi":2.25}]},"S翡翠水庫":{"name":"翡翠水庫（6 站平均）","river":"翡翠水庫","kind":"水庫","cls":"甲","lat":null,"lng":null,"recs":[{"ym":"2025-01","date":"2025-01-13","temp":18.9,"do":8.23,"sat":null,"ph":7.3,"turb":0.76,"rpi":null},{"ym":"2025-02","date":"2025-02-03","temp":17.9,"do":8.17,"sat":null,"ph":7.28,"turb":0.55,"rpi":null},{"ym":"2025-03","date":"2025-03-03","temp":21.48,"do":8.88,"sat":null,"ph":7.62,"turb":0.63,"rpi":null},{"ym":"2025-04","date":"2025-04-07","temp":19.4,"do":9.25,"sat":null,"ph":7.8,"turb":0.83,"rpi":null},{"ym":"2025-05","date":"2025-05-05","temp":26.13,"do":8.93,"sat":null,"ph":8.07,"turb":1.65,"rpi":null},{"ym":"2025-06","date":"2025-06-02","temp":29.1,"do":10.05,"sat":null,"ph":8.52,"turb":1.25,"rpi":null},{"ym":"2025-07","date":"2025-07-14","temp":29.95,"do":8.3,"sat":null,"ph":8.82,"turb":1.11,"rpi":null},{"ym":"2025-08","date":"2025-08-04","temp":31.28,"do":8.55,"sat":null,"ph":8.83,"turb":1.0,"rpi":null},{"ym":"2025-09","date":"2025-09-01","temp":30.5,"do":7.98,"sat":null,"ph":8.97,"turb":1.15,"rpi":null},{"ym":"2025-10","date":"2025-10-01","temp":31.08,"do":8.12,"sat":null,"ph":7.1,"turb":0.93,"rpi":null},{"ym":"2025-11","date":"2025-11-03","temp":23.87,"do":6.73,"sat":null,"ph":7.02,"turb":0.92,"rpi":null},{"ym":"2025-12","date":"2025-12-01","temp":23.38,"do":7.67,"sat":null,"ph":7.42,"turb":1.08,"rpi":null},{"ym":"2026-01","date":"2026-01-26","temp":19.8,"do":8.6,"sat":null,"ph":7.48,"turb":0.58,"rpi":null},{"ym":"2026-02","date":"2026-02-02","temp":18.65,"do":8.8,"sat":null,"ph":7.5,"turb":0.84,"rpi":null},{"ym":"2026-03","date":"2026-03-02","temp":22.33,"do":8.88,"sat":null,"ph":7.5,"turb":1.03,"rpi":null},{"ym":"2026-04","date":"2026-04-01","temp":21.47,"do":9.05,"sat":null,"ph":7.93,"turb":0.85,"rpi":null},{"ym":"2026-05","date":"2026-05-04","temp":24.55,"do":8.78,"sat":null,"ph":8.4,"turb":0.89,"rpi":null},{"ym":"2026-06","date":"2026-06-01","temp":28.07,"do":7.4,"sat":null,"ph":8.12,"turb":1.83,"rpi":null},{"ym":"2026-07","date":"2026-07-01","temp":30.75,"do":8.15,"sat":null,"ph":8.12,"turb":1.23,"rpi":null}]},"R1058":{"name":"許厝港一號橋","river":"老街溪","kind":"河川","cls":"丙","lat":25.0774436,"lng":121.1776119,"recs":[{"ym":"2025-01","date":"2025-01-07","temp":15.4,"do":9.0,"sat":90.2,"ph":7.2,"turb":null,"rpi":4.5},{"ym":"2025-02","date":"2025-02-05","temp":14.2,"do":8.6,"sat":83.9,"ph":6.93,"turb":null,"rpi":3.5},{"ym":"2025-03","date":"2025-03-06","temp":15.7,"do":9.3,"sat":93.4,"ph":7.17,"turb":null,"rpi":4.75},{"ym":"2025-04","date":"2025-04-08","temp":24.8,"do":9.7,"sat":117.4,"ph":7.78,"turb":null,"rpi":2.0},{"ym":"2025-05","date":"2025-05-07","temp":22.0,"do":8.3,"sat":95.6,"ph":7.22,"turb":null,"rpi":5.66666666666667},{"ym":"2025-06","date":"2025-06-04","temp":24.8,"do":7.4,"sat":90.0,"ph":7.5,"turb":null,"rpi":3.25},{"ym":"2025-07","date":"2025-07-02","temp":31.6,"do":6.5,"sat":87.7,"ph":7.58,"turb":null,"rpi":2.0},{"ym":"2025-08","date":"2025-08-07","temp":34.2,"do":9.2,"sat":131.2,"ph":8.96,"turb":null,"rpi":1.5},{"ym":"2025-09","date":"2025-09-03","temp":32.1,"do":9.0,"sat":123.8,"ph":7.92,"turb":null,"rpi":2.5},{"ym":"2025-10","date":"2025-10-01","temp":31.5,"do":8.1,"sat":109.6,"ph":7.65,"turb":null,"rpi":2.0},{"ym":"2025-11","date":"2025-11-06","temp":26.1,"do":7.2,"sat":88.4,"ph":7.85,"turb":null,"rpi":2.0},{"ym":"2025-12","date":"2025-12-04","temp":19.8,"do":8.2,"sat":89.0,"ph":7.76,"turb":null,"rpi":3.5},{"ym":"2026-01","date":"2026-01-08","temp":13.5,"do":8.8,"sat":83.2,"ph":7.64,"turb":null,"rpi":2.25},{"ym":"2026-02","date":"2026-02-06","temp":19.9,"do":5.9,"sat":65.0,"ph":7.5,"turb":null,"rpi":4.0},{"ym":"2026-03","date":"2026-03-03","temp":18.3,"do":8.3,"sat":88.2,"ph":7.58,"turb":null,"rpi":4.75},{"ym":"2026-04","date":"2026-04-08","temp":20.8,"do":8.7,"sat":99.4,"ph":7.02,"turb":null,"rpi":1.0},{"ym":"2026-05","date":"2026-05-07","temp":23.8,"do":8.0,"sat":95.6,"ph":7.52,"turb":null,"rpi":1.5},{"ym":"2026-06","date":"2026-06-22","temp":30.7,"do":9.2,"sat":124.2,"ph":8.14,"turb":null,"rpi":1.5},{"ym":"2026-07","date":"2026-07-08","temp":31.2,"do":10.1,"sat":136.8,"ph":8.32,"turb":null,"rpi":1.0},{"ym":"2026-08","date":"2026-08-05","temp":29.3,"do":7.2,"sat":95.4,"ph":7.52,"turb":null,"rpi":1.5}]},"R1054":{"name":"北勢橋","river":"老街溪","kind":"河川","cls":"丙","lat":24.9248289,"lng":121.2124419,"recs":[{"ym":"2025-01","date":"2025-01-07","temp":14.2,"do":8.5,"sat":84.1,"ph":7.14,"turb":null,"rpi":4.5},{"ym":"2025-02","date":"2025-02-05","temp":16.1,"do":8.7,"sat":90.4,"ph":7.29,"turb":null,"rpi":3.5},{"ym":"2025-03","date":"2025-03-06","temp":16.2,"do":9.4,"sat":97.4,"ph":7.02,"turb":null,"rpi":2.5},{"ym":"2025-04","date":"2025-04-08","temp":21.7,"do":7.8,"sat":90.3,"ph":7.38,"turb":null,"rpi":3.5},{"ym":"2025-05","date":"2025-05-07","temp":21.8,"do":8.1,"sat":94.8,"ph":7.47,"turb":null,"rpi":5.0},{"ym":"2025-06","date":"2025-06-04","temp":23.9,"do":6.9,"sat":83.7,"ph":7.34,"turb":null,"rpi":3.75},{"ym":"2025-07","date":"2025-07-02","temp":31.5,"do":7.5,"sat":104.1,"ph":7.48,"turb":null,"rpi":2.25},{"ym":"2025-08","date":"2025-08-07","temp":29.1,"do":7.4,"sat":97.6,"ph":7.5,"turb":null,"rpi":2.75},{"ym":"2025-09","date":"2025-09-03","temp":28.4,"do":6.3,"sat":83.1,"ph":7.3,"turb":null,"rpi":4.0},{"ym":"2025-10","date":"2025-10-01","temp":27.9,"do":5.1,"sat":65.6,"ph":7.39,"turb":null,"rpi":4.25},{"ym":"2025-11","date":"2025-11-06","temp":23.7,"do":7.0,"sat":84.6,"ph":7.42,"turb":null,"rpi":3.5},{"ym":"2025-12","date":"2025-12-04","temp":18.0,"do":8.6,"sat":91.4,"ph":7.54,"turb":null,"rpi":4.5},{"ym":"2026-01","date":"2026-01-08","temp":14.3,"do":8.4,"sat":82.2,"ph":7.3,"turb":null,"rpi":3.75},{"ym":"2026-02","date":"2026-02-06","temp":20.4,"do":6.4,"sat":72.0,"ph":7.32,"turb":null,"rpi":5.0},{"ym":"2026-03","date":"2026-03-03","temp":17.8,"do":8.2,"sat":87.6,"ph":7.32,"turb":null,"rpi":5.75},{"ym":"2026-04","date":"2026-04-08","temp":21.7,"do":8.4,"sat":96.9,"ph":7.15,"turb":null,"rpi":2.75},{"ym":"2026-05","date":"2026-05-07","temp":25.0,"do":7.7,"sat":95.2,"ph":7.22,"turb":null,"rpi":2.25},{"ym":"2026-06","date":"2026-06-22","temp":30.0,"do":7.0,"sat":95.6,"ph":7.48,"turb":null,"rpi":2.25},{"ym":"2026-07","date":"2026-07-08","temp":29.7,"do":7.1,"sat":95.2,"ph":7.52,"turb":null,"rpi":2.25},{"ym":"2026-08","date":"2026-08-05","temp":29.2,"do":7.3,"sat":97.4,"ph":7.49,"turb":null,"rpi":2.25}]},"R1012":{"name":"百齡橋","river":"基隆河","kind":"河川","cls":"丁","lat":25.088435,"lng":121.5137258,"recs":[{"ym":"2025-01","date":"2025-01-02","temp":17.9,"do":3.0,"sat":31.6,"ph":7.04,"turb":null,"rpi":4.0},{"ym":"2025-02","date":"2025-02-06","temp":15.9,"do":7.4,"sat":74.5,"ph":7.28,"turb":null,"rpi":1.5},{"ym":"2025-03","date":"2025-03-03","temp":21.2,"do":1.4,"sat":14.1,"ph":7.13,"turb":null,"rpi":5.0},{"ym":"2025-04","date":"2025-04-07","temp":20.3,"do":3.6,"sat":39.5,"ph":7.12,"turb":null,"rpi":3.5},{"ym":"2025-05","date":"2025-05-05","temp":26.7,"do":4.7,"sat":59.0,"ph":7.24,"turb":null,"rpi":2.5},{"ym":"2025-06","date":"2025-06-02","temp":26.9,"do":7.6,"sat":96.7,"ph":7.06,"turb":null,"rpi":1.5},{"ym":"2025-07","date":"2025-07-01","temp":30.7,"do":4.7,"sat":63.2,"ph":7.14,"turb":null,"rpi":3.25},{"ym":"2025-08","date":"2025-08-07","temp":28.2,"do":2.2,"sat":28.3,"ph":7.02,"turb":null,"rpi":3.25},{"ym":"2025-09","date":"2025-09-01","temp":30.5,"do":2.9,"sat":39.2,"ph":7.29,"turb":null,"rpi":3.5},{"ym":"2025-10","date":"2025-10-08","temp":29.5,"do":2.4,"sat":31.3,"ph":7.26,"turb":null,"rpi":4.0},{"ym":"2025-11","date":"2025-11-06","temp":22.7,"do":6.5,"sat":75.2,"ph":7.22,"turb":null,"rpi":1.0},{"ym":"2025-12","date":"2025-12-04","temp":20.0,"do":2.3,"sat":24.8,"ph":7.12,"turb":null,"rpi":3.5},{"ym":"2026-01","date":"2026-01-08","temp":16.7,"do":4.0,"sat":40.7,"ph":7.48,"turb":null,"rpi":3.5},{"ym":"2026-02","date":"2026-02-02","temp":17.3,"do":7.8,"sat":80.3,"ph":7.52,"turb":null,"rpi":1.0},{"ym":"2026-03","date":"2026-03-02","temp":21.5,"do":8.5,"sat":96.0,"ph":7.2,"turb":null,"rpi":2.75},{"ym":"2026-04","date":"2026-04-09","temp":22.2,"do":5.8,"sat":66.8,"ph":7.4,"turb":null,"rpi":2.0},{"ym":"2026-05","date":"2026-05-07","temp":24.6,"do":6.3,"sat":75.3,"ph":7.25,"turb":null,"rpi":1.5},{"ym":"2026-06","date":"2026-06-04","temp":29.0,"do":2.2,"sat":29.1,"ph":7.12,"turb":null,"rpi":3.5},{"ym":"2026-07","date":"2026-07-06","temp":31.1,"do":4.3,"sat":58.0,"ph":7.17,"turb":null,"rpi":2.75},{"ym":"2026-08","date":"2026-08-04","temp":31.3,"do":2.6,"sat":35.4,"ph":7.18,"turb":null,"rpi":3.25}]},"S石門水庫":{"name":"石門水庫（6 站平均）","river":"石門水庫","kind":"水庫","cls":"甲","lat":null,"lng":null,"recs":[{"ym":"2025-02","date":"2025-02-08","temp":15.4,"do":8.83,"sat":90.17,"ph":7.81,"turb":5.55,"rpi":null},{"ym":"2025-06","date":"2025-06-09","temp":null,"do":null,"sat":null,"ph":null,"turb":null,"rpi":null},{"ym":"2025-09","date":"2025-09-11","temp":29.92,"do":9.1,"sat":123.65,"ph":9.09,"turb":1.75,"rpi":null},{"ym":"2025-11","date":"2025-11-26","temp":20.95,"do":8.27,"sat":95.02,"ph":7.74,"turb":15.83,"rpi":null},{"ym":"2026-02","date":"2026-02-06","temp":18.12,"do":9.2,"sat":99.93,"ph":8.08,"turb":2.02,"rpi":null},{"ym":"2026-05","date":"2026-05-04","temp":23.82,"do":9.03,"sat":110.12,"ph":8.68,"turb":3.27,"rpi":null}]}},"pairs":[["石門水庫-靜止","S石門水庫","同一水庫（官方約每季採樣，6 站平均）"],["石門水庫-靜止","R1036","壩下游後池堰，約 1.5 km"],["翡翠水庫-靜止","S翡翠水庫","同一水庫（官方每月採樣，6 站平均）"],["北水特-流動","S翡翠水庫","北勢溪下游的水庫（參考）"],["東眼山-流動","R1041","三峽河，距離較遠（參考）"],["內雙溪-流動","R1012","基隆河下游百齡橋，已匯入都市河段（參考）"],["內雙溪-靜止","R1012","基隆河下游百齡橋，已匯入都市河段（參考）"],["老街溪-流動","R1054","同一條溪，翠堤橋上游約 3 km"],["老街溪-流動","R1058","同一條溪，下游出海口附近"],["關渡-靜止","R1003","關渡大橋，鄰近"],["友達-靜止","R1053","老街溪上游美都麗橋（水系待確認，參考）"]],"rain":{"C0C670":{"name":"龍潭","lat":24.870056,"lng":121.221389,"sites":["石門水庫-靜止"],"m":{"2025-01":[69.0,10,18.0,"2025-01-27"],"2025-02":[117.5,11,34.0,"2025-02-13"],"2025-03":[332.5,14,67.0,"2025-03-15"],"2025-04":[220.0,15,44.0,"2025-04-12"],"2025-05":[362.0,9,84.0,"2025-05-10"],"2025-06":[175.0,14,30.5,"2025-06-18"],"2025-07":[385.0,17,134.5,"2025-07-25"],"2025-08":[92.0,4,71.0,"2025-08-27"],"2025-09":[35.5,12,10.0,"2025-09-20"],"2025-10":[569.0,12,194.0,"2025-10-20"],"2025-11":[139.0,14,34.5,"2025-11-13"],"2025-12":[60.5,14,14.5,"2025-12-31"],"2026-01":[58.0,11,9.5,"2026-01-20"],"2026-02":[66.0,12,20.5,"2026-02-27"],"2026-03":[78.0,14,21.0,"2026-03-04"],"2026-04":[340.0,16,73.0,"2026-04-04"],"2026-05":[104.0,9,49.0,"2026-05-05"],"2026-06":[627.5,20,177.5,"2026-06-25"],"2026-07":[348.5,13,192.5,"2026-07-11"],"2026-08":[373.0,16,157.5,"2026-08-09"],"2026-09":[193.5,7,84.0,"2026-09-03"],"2026-10":[26.5,2,25.0,"2026-10-05"]}},"C0C650":{"name":"平鎮","lat":24.897503,"lng":121.214636,"sites":["老街溪-流動"],"m":{"2025-01":[51.0,10,15.5,"2025-01-27"],"2025-02":[102.0,10,31.0,"2025-02-13"],"2025-03":[253.5,13,65.0,"2025-03-15"],"2025-04":[180.0,15,48.5,"2025-04-10"],"2025-05":[383.5,9,116.5,"2025-05-10"],"2025-06":[104.0,13,36.0,"2025-06-05"],"2025-07":[247.5,12,105.0,"2025-07-25"],"2025-08":[51.5,2,32.5,"2025-08-27"],"2025-09":[17.0,6,14.0,"2025-09-07"],"2025-10":[641.0,10,207.5,"2025-10-20"],"2025-11":[140.5,12,40.5,"2025-11-13"],"2025-12":[57.0,14,16.5,"2025-12-31"],"2026-01":[47.5,11,8.5,"2026-01-20"],"2026-02":[46.5,10,12.5,"2026-02-25"],"2026-03":[40.5,10,10.5,"2026-03-03"],"2026-04":[219.5,11,119.5,"2026-04-24"],"2026-05":[115.5,7,58.5,"2026-05-05"],"2026-06":[354.0,14,79.5,"2026-06-10"],"2026-07":[51.5,8,26.0,"2026-07-10"],"2026-08":[37.0,11,10.5,"2026-08-06"],"2026-09":[192.5,8,111.0,"2026-09-01"],"2026-10":[23.0,2,22.0,"2026-10-05"]}},"C0AH40":{"name":"平等","lat":25.129142,"lng":121.577086,"sites":["內雙溪-流動","內雙溪-靜止"],"m":{"2025-01":[63.0,14,12.0,"2025-01-26"],"2025-02":[124.0,16,25.5,"2025-02-13"],"2025-03":[249.0,13,65.5,"2025-03-15"],"2025-04":[197.0,14,48.0,"2025-04-10"],"2025-05":[288.0,17,70.5,"2025-05-07"],"2025-06":[80.0,9,27.0,"2025-06-12"],"2025-07":[370.0,21,68.5,"2025-07-29"],"2025-08":[105.5,6,34.0,"2025-08-05"],"2025-09":[199.5,8,59.5,"2025-09-07"],"2025-10":[1507.5,17,442.0,"2025-10-21"],"2025-11":[326.0,18,65.0,"2025-11-11"],"2025-12":[100.0,18,15.0,"2025-12-09"],"2026-01":[88.5,11,16.0,"2026-01-01"],"2026-02":[38.5,11,21.0,"2026-02-27"],"2026-03":[70.0,12,13.0,"2026-03-27"],"2026-04":[199.0,15,45.0,"2026-04-06"],"2026-05":[222.0,8,59.0,"2026-05-13"],"2026-06":[707.0,18,169.0,"2026-06-25"],"2026-07":[322.5,9,239.5,"2026-07-11"],"2026-08":[518.0,21,194.0,"2026-08-09"],"2026-09":[471.5,15,154.0,"2026-09-04"],"2026-10":[82.5,7,60.0,"2026-10-05"]}},"C0A980":{"name":"社子","lat":25.109508,"lng":121.469681,"sites":["關渡-靜止"],"m":{"2025-01":[35.5,7,9.5,"2025-01-26"],"2025-02":[81.0,9,26.5,"2025-02-13"],"2025-03":[213.0,11,50.0,"2025-03-15"],"2025-04":[200.5,14,54.5,"2025-04-10"],"2025-05":[285.5,11,69.0,"2025-05-07"],"2025-06":[77.0,9,21.0,"2025-06-27"],"2025-07":[273.5,17,72.0,"2025-07-25"],"2025-08":[42.0,7,29.5,"2025-08-01"],"2025-09":[127.5,4,41.5,"2025-09-23"],"2025-10":[327.0,9,101.0,"2025-10-19"],"2025-11":[38.5,9,12.5,"2025-11-17"],"2025-12":[23.0,8,6.0,"2025-12-01"],"2026-01":[14.5,6,4.5,"2026-01-27"],"2026-02":[30.0,7,18.5,"2026-02-27"],"2026-03":[40.0,9,14.0,"2026-03-27"],"2026-04":[237.5,15,51.5,"2026-04-03"],"2026-05":[163.5,7,61.5,"2026-05-13"],"2026-06":[470.0,17,92.0,"2026-06-25"],"2026-07":[187.5,8,118.5,"2026-07-11"],"2026-08":[285.0,15,58.0,"2026-08-08"],"2026-09":[304.5,10,103.0,"2026-09-04"],"2026-10":[28.0,3,19.5,"2026-10-05"]}}}};
+const $ = s => document.querySelector(s);
+const C = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+function hex2rgb(h) { h = h.replace('#', ''); if (h.length === 3) h = h.split('').map(x => x + x).join(''); return [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16)); }
+function mix(a, b, t) { const A = hex2rgb(a), B2 = hex2rgb(b); return `rgb(${A.map((v, i) => Math.round(v * t + B2[i] * (1 - t))).join(',')})`; }
+const MONTHS = D.months;
+const SITE = Object.fromEntries(D.sites.map(s => [s.k, s]));
+const REC = {}; D.records.forEach(r => { REC[r.k + '|' + r.ym] = r; });
+const START = { '翡翠水庫-靜止': '2025-06', '北水特-流動': '2025-06', '內雙溪-靜止': '2025-05' };
+D.official['S石門水庫'].lat = 24.800; D.official['S石門水庫'].lng = 121.268; D.official['S翡翠水庫'].lat = 24.913; D.official['S翡翠水庫'].lng = 121.592;
+const PAIRS = {}; D.pairs.forEach(([k, sid, rel]) => { (PAIRS[k] = PAIRS[k] || []).push({ sid, rel }); });
+const NAME = k => k.startsWith('內雙溪') ? '內雙溪' : k.startsWith('桃北') ? '桃北水資中心' : SITE[k].short;
+const SN = k => NAME(k) + (k.startsWith('內雙溪') ? '・' + SITE[k].point : '');
+const COL = k => '--c' + (D.sites.findIndex(s => s.k === k) + 1);
+
+const PARAMS = {
+  o: { name: '溶氧', unit: 'ppm', of: 'do', dom: [0, 11], ticks: [0, 2, 4, 6, 8, 10], rule: '綠 ≥ 8｜黃 4–7｜紅 ≤ 2 ppm',
+       cls: v => v == null ? 'na' : v >= 7.5 ? 'good' : v > 2 ? 'warn' : 'bad' },
+  t: { name: '水溫', unit: '°C', of: 'temp', dom: [5, 36], ticks: [5, 10, 15, 20, 25, 30, 35], rule: '冷 → 暖｜紅圈：流動水域 > 32°C',
+       cls: v => v == null ? 'na' : 'scale' },
+  s: { name: '飽和度', unit: '%', of: 'sat', dom: [0, 130], ticks: [0, 25, 50, 75, 100, 125], rule: '深色接近飽和｜紅圈：> 100%（藻類旺盛）',
+       cls: v => v == null ? 'na' : 'scale' },
+  p: { name: 'pH', unit: '', of: 'ph', dom: [4, 11], ticks: [4, 6, 8, 10], rule: '綠 6.5–8.5｜黃 6、9｜紅 ≤ 5 或 ≥ 10',
+       cls: v => v == null ? 'na' : (v >= 6.5 && v <= 8.5) ? 'good' : (v > 5 && v < 10) ? 'warn' : 'bad' },
+  u: { name: '濁度', unit: 'JTU', of: 'turb', dom: [0, 110], ticks: [0, 20, 40, 60, 80, 100], rule: '綠 0｜黃 20–60｜紅 ≥ 80 JTU（雨後可能自然升高）',
+       cls: v => v == null ? 'na' : v <= 10 ? 'good' : v < 80 ? 'warn' : 'bad' },
+};
+let st = { v: 'map', p: 'o', m: MONTHS.indexOf('2026-07'), site: '石門水庫-靜止', cmp: D.sites.map(s => s.k),
+           official: true, mask: false, rain: false, pair: 0, timer: null };
+try { const h = location.hash.slice(1); if (['map', 'trend', 'official', 'qa'].includes(h)) st.v = h; } catch (e) {}
+
+function colorFor(pk, v) {
+  const c = PARAMS[pk].cls(v);
+  if (c === 'na') return C('--na');
+  if (c !== 'scale') return C('--' + c);
+  if (pk === 't') return mix(C('--bad'), C('--accent'), Math.max(0, Math.min(1, (v - 8) / 26)));
+  return mix(C('--accent'), C('--panel'), .2 + Math.max(0, Math.min(1, v / 100)) * .8);
+}
+const fmt = v => v == null ? '—' : (Math.round(v * 10) / 10).toString();
+const ymL = ym => ym.replace('-', '/');
+
+// ---------- 地圖 ----------
+const B = { lng0: 121.10, lng1: 121.83, lat0: 24.77, lat1: 25.22 };
+const KX = 1000, KY = 1100, W = (B.lng1 - B.lng0) * KX, H = (B.lat1 - B.lat0) * KY;
+const P = (lng, lat) => [+((lng - B.lng0) * KX).toFixed(1), +((B.lat1 - lat) * KY).toFixed(1)];
+const RIVERS = [
+  { w: 6, pts: [[121.405, 25.185], [121.4227, 25.1709], [121.457, 25.1248], [121.48, 25.105], [121.503, 25.084], [121.50, 25.051], [121.478, 25.032]] },
+  { w: 4.5, pts: [[121.478, 25.032], [121.436, 24.995], [121.405, 24.968], [121.353, 24.945], [121.284, 24.885], [121.252, 24.824], [121.27, 24.79], [121.33, 24.775]] },
+  { w: 2, pts: [[121.37, 24.94], [121.374, 24.896], [121.395, 24.86], [121.41, 24.835]] },
+  { w: 4, pts: [[121.478, 25.032], [121.496, 25.010], [121.514, 25.021], [121.535, 24.985], [121.54, 24.955], [121.564, 24.904]] },
+  { w: 2.5, pts: [[121.564, 24.904], [121.60, 24.915], [121.65, 24.925], [121.711, 24.937], [121.76, 24.955], [121.80, 24.97]] },
+  { w: 4, pts: [[121.48, 25.105], [121.514, 25.088], [121.56, 25.075], [121.62, 25.06], [121.656, 25.069], [121.693, 25.079], [121.75, 25.10], [121.805, 25.106]] },
+  { w: 1.8, pts: [[121.515, 25.089], [121.545, 25.098], [121.574, 25.116], [121.588, 25.14]] },
+  { w: 2.5, pts: [[121.19, 25.095], [121.178, 25.077], [121.20, 25.00], [121.216, 24.953], [121.212, 24.925], [121.213, 24.874], [121.225, 24.84]] },
+  { w: 2, pts: [[121.24, 25.118], [121.251, 25.102], [121.29, 25.06], [121.34, 25.03], [121.362, 25.019]] },
+];
+const COAST = [[121.10, 25.02], [121.16, 25.085], [121.21, 25.11], [121.26, 25.125], [121.33, 25.15], [121.39, 25.17], [121.4227, 25.178], [121.46, 25.20], [121.50, 25.22]];
+const RLBL = { '淡水河': [121.43, 25.15, -50], '大漢溪': [121.30, 24.905, -38], '新店溪': [121.528, 24.965, -60], '北勢溪': [121.64, 24.913, 10],
+  '基隆河': [121.60, 25.058, -12], '內雙溪': [121.535, 25.083, 18], '老街溪': [121.193, 25.02, -75], '南崁溪': [121.33, 25.022, -28], '三峽河': [121.392, 24.895, -60] };
+const LBL = { '石門水庫-靜止': [-16, 24, 'end'], '翡翠水庫-靜止': [0, 28, 'middle'], '北水特-流動': [0, -18, 'middle'], '東眼山-流動': [16, 20, 'start'],
+  '內雙溪-流動': [0, -20, 'middle'], '老街溪-流動': [16, 6, 'start'], '友達-靜止': [-16, 6, 'end'], '關渡-靜止': [-14, -14, 'end'], '桃北水資中心-放流水': [16, -8, 'start'] };
+const OFFSET = { '內雙溪-流動': [-8, 0], '內雙溪-靜止': [8, 0] };
+function issueScore(k) {
+  const ms = MONTHS.filter(m => !(START[k] && m < START[k])); let s = 0;
+  ms.forEach(m => { const r = REC[k + '|' + m]; s += !r ? 1 : r.st === '待查核' ? .8 : r.st === '調整值' ? .25 : 0; });
+  return Math.min(1, s / ms.length * 1.6);
+}
+function drawMap() {
+  const svg = $('#map'); svg.setAttribute('viewBox', `0 0 ${W} ${H}`); svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+  const pk = st.p, ym = MONTHS[st.m], Pm = PARAMS[pk];
+  const T = (x, y, t, o = {}) => `<text x="${x}" y="${y}" ${o.a ? `text-anchor="${o.a}"` : ''} ${o.r != null ? `transform="rotate(${o.r} ${x} ${y})"` : ''} font-size="${o.s || 13}" fill="${o.c || C('--muted')}" ${o.w ? `font-weight="${o.w}"` : ''} ${o.halo ? `paint-order="stroke" stroke="${C('--panel')}" stroke-width="4"` : ''} style="font-family:var(--font-body)" ${o.ls ? `letter-spacing="${o.ls}"` : ''}>${t}</text>`;
+  let h = `<rect width="${W}" height="${H}" fill="${C('--panel')}"/>`;
+  const sea = COAST.map(p => P(...p).join(',')).join(' ');
+  h += `<polygon points="0,0 ${sea} ${W},0" fill="${C('--water-soft')}"/><polyline points="${sea}" fill="none" stroke="${C('--water')}" stroke-width="1.2"/>`;
+  h += T(...P(121.17, 25.17), '臺灣海峽', { ls: 4 }) + T(...P(121.63, 24.79), '淡水河流域', { ls: 2 }) + T(...P(121.105, 24.935), '桃園台地', { ls: 2 }) + T(...P(121.105, 24.918), '獨立水系', { ls: 2 });
+  RIVERS.forEach(r => { h += `<polyline points="${r.pts.map(p => P(...p).join(',')).join(' ')}" fill="none" stroke="${C('--water')}" stroke-width="${r.w}" stroke-linecap="round" stroke-linejoin="round"/>`; });
+  Object.entries(RLBL).forEach(([n, [lng, lat, rot]]) => { const [x, y] = P(lng, lat); h += T(x, y, n, { a: 'middle', r: rot, s: 12, c: C('--accent') }); });
+  [[121.262, 24.80, 13, 8], [121.585, 24.91, 15, 6]].forEach(([lng, lat, rx, ry]) => { const [x, y] = P(lng, lat);
+    h += `<ellipse cx="${x}" cy="${y}" rx="${rx}" ry="${ry}" fill="${C('--water')}" opacity=".55" transform="rotate(-20 ${x} ${y})"/>`; });
+  if (st.mask) {
+    h += `<rect width="${W}" height="${H}" style="fill:var(--veil)"/><defs><radialGradient id="hg"><stop offset="0" stop-color="${C('--ask')}" stop-opacity=".85"/><stop offset="1" stop-color="${C('--ask')}" stop-opacity="0"/></radialGradient></defs>`;
+    D.sites.forEach(s => { const sc = issueScore(s.k); if (sc <= 0) return; const [x, y] = P(s.lng, s.lat); const o = OFFSET[s.k] || [0, 0];
+      h += `<circle cx="${x + o[0]}" cy="${y + o[1]}" r="${16 + sc * 46}" fill="url(#hg)" opacity="${.35 + sc * .6}"/>`; });
+  }
+  if (st.rain) Object.values(D.rain).forEach(r => { const [x, y] = P(r.lng, r.lat); const m = r.m[ym];
+    h += `<path d="M${x} ${y - 9} C ${x + 6} ${y - 1}, ${x + 5} ${y + 5}, ${x} ${y + 5} C ${x - 5} ${y + 5}, ${x - 6} ${y - 1}, ${x} ${y - 9} Z" fill="${C('--rain')}" opacity=".85"/>`
+       + T(x + 8, y + 3, `${r.name} ${m ? m[0] + ' mm' : '—'}`, { s: 11, c: C('--rain'), halo: 1 }); });
+  if (st.official) {
+    D.pairs.forEach(([k, sid]) => { const o = D.official[sid]; const s = SITE[k]; const [x1, y1] = P(s.lng, s.lat), [x2, y2] = P(o.lng, o.lat);
+      h += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${C('--official')}" stroke-width="1" stroke-dasharray="3 3" opacity=".7"/>`; });
+    const seen = new Set();
+    D.pairs.forEach(([k, sid]) => { if (seen.has(sid)) return; seen.add(sid); const o = D.official[sid];
+      const rec = o.recs.find(r => r.ym === ym); const v = rec ? rec[Pm.of] : null; const [x, y] = P(o.lng, o.lat);
+      h += `<g data-tip="${o.name}（環境部）${rec && v != null && pk !== 'u' ? '：' + fmt(v) + ' ' + (pk === 'o' ? 'mg/L' : Pm.unit) : rec ? '' : '：本月無採樣'}"><rect x="${x - 5}" y="${y - 5}" width="10" height="10" transform="rotate(45 ${x} ${y})" fill="${rec && v != null && pk !== 'u' ? colorFor(pk, v) : C('--panel')}" stroke="${C('--official')}" stroke-width="1.8"/></g>`; });
+  }
+  D.sites.forEach(s => {
+    const r = REC[s.k + '|' + ym], v = r ? r[pk] : null; let [x, y] = P(s.lng, s.lat); const o = OFFSET[s.k] || [0, 0]; x += o[0]; y += o[1];
+    const before = START[s.k] && ym < START[s.k];
+    let g = `<g class="site" data-k="${s.k}" tabindex="0" role="button" aria-label="${SN(s.k)}" style="cursor:pointer" data-tip="${SN(s.k)}${r ? '：' + fmt(v) + ' ' + Pm.unit : before ? '：尚未加入' : '：本月未填報'}">`;
+    if (st.site === s.k) g += `<circle cx="${x}" cy="${y}" r="16" fill="none" stroke="${C('--ink')}" stroke-width="1.6"/>`;
+    if (r && v != null) {
+      g += `<circle cx="${x}" cy="${y}" r="10.5" fill="${colorFor(pk, v)}" stroke="${C('--panel')}" stroke-width="2"/>`;
+      if ((pk === 's' && v > 100) || (pk === 't' && v > 32 && s.point === '流動')) g += `<circle cx="${x}" cy="${y}" r="13.5" fill="none" stroke="${C('--bad')}" stroke-width="1.8"/>`;
+    } else g += `<circle cx="${x}" cy="${y}" r="8.5" fill="${C('--panel')}" stroke="${C('--na')}" stroke-width="1.8" stroke-dasharray="${before ? '1 2' : '3 2'}"/>`;
+    if (st.mask && r && r.st === '待查核') g += `<circle cx="${x}" cy="${y}" r="14" fill="none" stroke="${C('--ask')}" stroke-width="2.6" stroke-dasharray="4 2"/>`;
+    if (st.mask && r && r.st === '調整值') g += `<circle cx="${x + 9}" cy="${y - 9}" r="4" fill="${C('--fix')}" stroke="${C('--panel')}" stroke-width="1"/>`;
+    const lb = LBL[s.k]; if (lb) g += T(x + lb[0], y + lb[1], NAME(s.k), { a: lb[2], s: 14, c: C('--ink'), w: 500, halo: 1 });
+    h += g + '</g>';
+  });
+  svg.innerHTML = h;
+  svg.querySelectorAll('.site').forEach(g => {
+    const go = () => { st.site = g.dataset.k; render(); };
+    g.addEventListener('click', go); g.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } });
+  });
+  svg.querySelectorAll('[data-tip]').forEach(g => { g.addEventListener('mouseenter', () => showTip(g, g.dataset.tip)); g.addEventListener('mouseleave', () => $('#tip').hidden = true); });
+  $('#mapNote').textContent = `${D.sites.filter(s => REC[s.k + '|' + ym]).length}／${D.sites.length} 點位有填報`;
+  let lg = (pk === 't' || pk === 's')
+    ? [pk === 't' ? 10 : 0, pk === 't' ? 21 : 50, pk === 't' ? 32 : 100].map(v => `<span><i style="background:${colorFor(pk, v)}"></i>${v}${Pm.unit}</span>`).join('')
+    : `<span><i style="background:var(--good)"></i>正常</span><span><i style="background:var(--warn)"></i>注意</span><span><i style="background:var(--bad)"></i>警示</span>`;
+  lg += `<span><i style="box-shadow:inset 0 0 0 1.5px var(--na)"></i>未填報</span>`;
+  if (st.official) lg += `<span><i style="border-radius:1px;transform:rotate(45deg) scale(.8);box-shadow:inset 0 0 0 1.5px var(--official)"></i>環境部測站</span>`;
+  if (st.mask) lg += `<span><i style="background:var(--ask)"></i>黃暈：缺漏與待查核較多</span>`;
+  lg += `<span>${Pm.rule}</span>`;
+  $('#legend').innerHTML = lg;
+}
+function showTip(el, t) { const box = $('#mapbox').getBoundingClientRect(), r = el.getBoundingClientRect(); const tip = $('#tip');
+  tip.textContent = t; tip.hidden = false; tip.style.left = (r.left + r.width / 2 - box.left) + 'px'; tip.style.top = (r.top - box.top) + 'px'; }
+
+// ---------- 折線圖（依容器實際尺寸繪製，文字維持固定大小） ----------
+function lineChart(svg, series, pk, opt = {}) {
+  const rect = svg.getBoundingClientRect();
+  const Wc = Math.max(260, Math.round(rect.width || 600)), Hc = Math.max(140, Math.round(rect.height || 220));
+  const fs = parseFloat(getComputedStyle(document.body).fontSize) * .72;
+  const m = { l: fs * 2.6, r: 8, t: fs * 1.6, b: fs * 1.9 };
+  svg.setAttribute('viewBox', `0 0 ${Wc} ${Hc}`);
+  const Pm = PARAMS[pk], [d0, d1] = Pm.dom, iw = Wc - m.l - m.r, ih = Hc - m.t - m.b;
+  const X = i => m.l + iw * i / (MONTHS.length - 1), Y = v => m.t + ih * (1 - (Math.max(d0, Math.min(d1, v)) - d0) / (d1 - d0));
+  let h = '';
+  if (opt.bars) { const mx = Math.max(...opt.bars.filter(Boolean), 1);
+    opt.bars.forEach((b, i) => { if (b == null) return; const bh = ih * .45 * b / mx; h += `<rect x="${X(i) - 4}" y="${m.t + ih - bh}" width="8" height="${bh}" fill="${C('--rain')}" opacity=".22"/>`; }); }
+  Pm.ticks.forEach(t => { h += `<line x1="${m.l}" x2="${Wc - m.r}" y1="${Y(t)}" y2="${Y(t)}" stroke="${C('--line')}"/><text x="${m.l - 5}" y="${Y(t) + fs * .35}" text-anchor="end" font-size="${fs}">${t}</text>`; });
+  MONTHS.forEach((mo, i) => { if (mo.endsWith('-01') || mo.endsWith('-07')) h += `<text x="${X(i)}" y="${Hc - 4}" text-anchor="middle" font-size="${fs}">${mo.slice(2).replace('-', '/')}</text>`; });
+  h += `<line x1="${X(st.m)}" x2="${X(st.m)}" y1="${m.t}" y2="${m.t + ih}" stroke="${C('--ink')}" opacity=".35"/>`;
+  series.forEach(s => {
+    let seg = [], segs = [];
+    if (s.dash) { s.vals.forEach((v, i) => { if (v != null) seg.push([X(i), Y(v)]); }); segs = [seg]; }
+    else { s.vals.forEach((v, i) => { if (v == null) { if (seg.length) segs.push(seg); seg = []; } else seg.push([X(i), Y(v)]); }); if (seg.length) segs.push(seg); }
+    segs.forEach(sg => { h += sg.length > 1 ? `<polyline points="${sg.map(p => p.join(',')).join(' ')}" fill="none" stroke="${s.color}" stroke-width="${s.dash ? 1.8 : 2.4}" ${s.dash ? 'stroke-dasharray="6 4"' : ''} stroke-linejoin="round"/>` : ''; });
+    s.vals.forEach((v, i) => { if (v != null) h += `<circle cx="${X(i)}" cy="${Y(v)}" r="${i === st.m ? 4.5 : s.dash ? 2.2 : 2.6}" fill="${s.dash ? C('--panel') : s.color}" stroke="${s.dash ? s.color : C('--panel')}" stroke-width="${s.dash ? 1.8 : i === st.m ? 1.5 : 0}"/>`; });
+  });
+  if (opt.title !== false) h += `<text x="${m.l}" y="${fs * 1.1}" font-size="${fs * 1.15}" font-weight="500" style="fill:var(--ink)">${opt.title || Pm.name}${Pm.unit ? '（' + (opt.unit || Pm.unit) + '）' : ''}</text>`;
+  svg.innerHTML = h;
+  svg.style.cursor = 'crosshair';
+  svg.onclick = e => { const b = svg.getBoundingClientRect(); const i = Math.round(((e.clientX - b.left) / b.width * Wc - m.l) / iw * (MONTHS.length - 1));
+    if (i >= 0 && i < MONTHS.length) { st.m = i; render(); } };
+}
+const series = (k, pk) => MONTHS.map(m => { const r = REC[k + '|' + m]; return r ? r[pk] : null; });
+const offSeries = (sid, pk) => MONTHS.map(m => { const r = D.official[sid].recs.find(x => x.ym === m); return r ? r[PARAMS[pk].of] : null; });
+const rainFor = k => Object.values(D.rain).find(r => r.sites.includes(k));
+
+// ---------- 地圖右側 ----------
+function drawPanel() {
+  const k = st.site, s = SITE[k], ym = MONTHS[st.m], r = REC[k + '|' + ym], before = START[k] && ym < START[k];
+  const stt = r ? r.st : before ? '尚未加入' : '未填報';
+  let h = `<div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap"><div class="site-name">${SN(k)}</div><span class="status st-${r ? r.st : '未填報'}">${stt}</span></div>
+    <div class="meta">${s.point === '放流水' ? '放流水' : s.point + '水域'}・${s.cls}${r ? '・' + r.d + (r.w ? '・' + r.w : '') : ''}</div><div class="vals">`;
+  Object.entries(PARAMS).forEach(([pk, Pm]) => { const v = r ? r[pk] : null;
+    h += `<button class="val" data-p="${pk}" aria-pressed="${st.p === pk}"><span class="k">${Pm.name}</span><span class="v"><span class="dot" style="background:${colorFor(pk, v)}"></span>${fmt(v)}</span></button>`; });
+  h += `</div><svg class="chart" id="siteChart" role="img" aria-label="${SN(k)}逐月趨勢"></svg>`;
+  const pairs = PAIRS[k] || [];
+  h += `<div class="legend" style="margin-top:4px"><span><i style="background:var(--c1);border-radius:2px;height:3px"></i>公民調查</span>${st.p !== 'u' ? pairs.slice(0, 1).map(p => `<span><i style="background:var(--official);border-radius:2px;height:3px"></i>${D.official[p.sid].name}（環境部）</span>`).join('') : ''}</div><div class="note">`;
+  if (r && (r.q.length || r.adj.length)) h += `<p><span class="lab">檢核</span>${r.q.map(q => q[0]).concat(r.adj).join('；')}</p>`;
+  if (r && r.note) h += `<p><span class="lab">備註</span>${r.note}</p>`;
+  const rn = rainFor(k); if (rn && rn.m[ym]) h += `<p><span class="lab">降雨</span>${rn.name}站 ${rn.m[ym][0]} mm／${rn.m[ym][1]} 雨日</p>`;
+  h += '</div>';
+  $('#panel').innerHTML = h;
+  $('#panel').querySelectorAll('.val').forEach(b => b.addEventListener('click', () => { st.p = b.dataset.p; render(); }));
+  const ser = [{ vals: series(k, st.p), color: C('--c1') }];
+  if (st.p !== 'u' && pairs[0]) ser.push({ vals: offSeries(pairs[0].sid, st.p), color: C('--official'), dash: true });
+  lineChart($('#siteChart'), ser, st.p, { bars: st.rain && rn ? MONTHS.map(m => rn.m[m] ? rn.m[m][0] : null) : null });
+}
+
+// ---------- 趨勢 ----------
+function drawTrend() {
+  $('#chips').innerHTML = D.sites.map(s => { const on = st.cmp.includes(s.k);
+    return `<button class="chip" data-k="${s.k}" aria-pressed="${on}"><i style="background:var(${COL(s.k)})"></i>${SN(s.k)}</button>`; }).join('');
+  $('#chips').querySelectorAll('.chip').forEach(b => b.addEventListener('click', () => { const k = b.dataset.k;
+    st.cmp = st.cmp.includes(k) ? st.cmp.filter(x => x !== k) : [...st.cmp, k]; render(); }));
+  const sel = D.sites.map(s => s.k).filter(k => st.cmp.includes(k)), ym = MONTHS[st.m];
+  const g = $('#grid6');
+  if (!g.children.length) g.innerHTML = Object.keys(PARAMS).map(pk => `<div class="card"><svg class="chart" data-p="${pk}" role="img" aria-label="${PARAMS[pk].name}逐月"></svg></div>`).join('')
+    + `<div class="card"><h2>${''}<span id="snapT"></span></h2><div class="scroll"><table class="snap" id="snap"></table></div></div>`;
+  g.querySelectorAll('svg[data-p]').forEach(svg => { const pk = svg.dataset.p; svg.parentElement.style.outline = pk === st.p ? `2px solid ${C('--accent')}` : '';
+    lineChart(svg, sel.map(k => ({ vals: series(k, pk), color: C(COL(k)) })), pk); });
+  $('#snapT').textContent = `${ymL(ym)} 數值`;
+  let t = '<tr><th>點位</th>' + Object.values(PARAMS).map(P => `<th>${P.name}</th>`).join('') + '</tr>';
+  sel.forEach(k => { const r = REC[k + '|' + ym];
+    t += `<tr><td><span style="display:inline-block;width:.8em;height:3px;background:var(${COL(k)});margin-right:5px;vertical-align:middle"></span>${SN(k)}</td>` +
+      Object.keys(PARAMS).map(pk => `<td class="num">${r ? fmt(r[pk]) : '—'}</td>`).join('') + '</tr>'; });
+  $('#snap').innerHTML = t;
+}
+
+// ---------- 官方對照 ----------
+function corr(a, b) { const n = a.length; if (n < 4) return null; const ma = a.reduce((x, y) => x + y) / n, mb = b.reduce((x, y) => x + y) / n;
+  let sab = 0, sa = 0, sb = 0; for (let i = 0; i < n; i++) { sab += (a[i] - ma) * (b[i] - mb); sa += (a[i] - ma) ** 2; sb += (b[i] - mb) ** 2; } return sa && sb ? sab / Math.sqrt(sa * sb) : null; }
+const PSTAT = D.pairs.map(([k, sid, rel]) => {
+  const o = D.official[sid]; const tA = [], tB = [], dA = [], dB = []; let n = 0;
+  o.recs.forEach(x => { const r = REC[k + '|' + x.ym]; if (!r) return; n++;
+    if (r.t != null && x.temp != null) { tA.push(r.t); tB.push(x.temp); }
+    if (r.o != null && x.do != null) { dA.push(r.o); dB.push(x.do); } });
+  const avg = a => a.length ? a.reduce((x, y) => x + y) / a.length : null;
+  return { k, sid, rel, n, r: corr(tA, tB), dc: avg(dA), doff: avg(dB) };
+});
+function drawOfficial() {
+  const near = PSTAT.filter(p => !p.rel.includes('參考'));
+  const rs = near.map(p => p.r).filter(v => v != null); const clean = PSTAT.filter(p => ['石門水庫-靜止', '翡翠水庫-靜止', '老街溪-流動'].includes(p.k) && p.dc != null);
+  const diffs = clean.map(p => p.dc - p.doff);
+  $('#finding').innerHTML = `<div><b>${Math.min(...rs).toFixed(2)}–${Math.max(...rs).toFixed(2)}</b><span>水溫逐月相關係數：季節變化一致</span></div>
+    <div><b>${Math.min(...diffs.map(Math.abs)).toFixed(1)}–${Math.max(...diffs.map(Math.abs)).toFixed(1)} ppm</b><span>石門、翡翠、老街溪溶氧低於官方</span></div>
+    <div><b>8 → 4 ppm</b><span>5 個場域 2025/10–2026/01 同步下降，疑試劑因素</span></div>`;
+  let t = '<tr><th>公民點位</th><th>環境部測站</th><th>月數</th><th>水溫 r</th><th>溶氧 公民</th><th>溶氧 官方</th><th>差</th></tr>';
+  PSTAT.forEach((p, i) => { const d = p.dc != null && p.doff != null ? p.dc - p.doff : null;
+    t += `<tr class="row${i === st.pair ? ' sel' : ''}" data-i="${i}"><td>${SN(p.k)}</td><td>${D.official[p.sid].name.replace(/（.*?）/, '')}${p.rel.includes('參考') ? '<span class="meta">（參考）</span>' : ''}</td><td class="num">${p.n}</td><td class="num">${p.r == null ? '—' : p.r.toFixed(2)}</td><td class="num">${fmt(p.dc)}</td><td class="num">${fmt(p.doff)}</td><td class="num ${d < -1 ? 'neg' : ''}">${d == null ? '—' : (d > 0 ? '+' : '') + d.toFixed(1)}</td></tr>`; });
+  $('#pairs').innerHTML = t;
+  $('#pairs').querySelectorAll('tr.row').forEach(tr => tr.addEventListener('click', () => { st.pair = +tr.dataset.i; render(); }));
+  const p = PSTAT[st.pair], o = D.official[p.sid];
+  $('#pairTitle').innerHTML = `${SN(p.k)} vs ${o.name} <small>${p.rel}</small>`;
+  $('#pairLegend').innerHTML = `<span><i style="background:var(--c1);border-radius:2px;height:3px"></i>公民調查</span><span><i style="background:var(--official);border-radius:2px;height:3px"></i>環境部（虛線）</span>`;
+  lineChart($('#pc1'), [{ vals: series(p.k, 't'), color: C('--c1') }, { vals: offSeries(p.sid, 't'), color: C('--official'), dash: true }], 't');
+  lineChart($('#pc2'), [{ vals: series(p.k, 'o'), color: C('--c1') }, { vals: offSeries(p.sid, 'o'), color: C('--official'), dash: true }], 'o', { unit: 'ppm／mg/L' });
+}
+
+// ---------- 資料檢核 ----------
+function drawQA() {
+  let h = '<table><colgroup><col class="c0">' + MONTHS.map(() => '<col>').join('') + '<col class="cr"></colgroup><thead><tr><th></th>' + MONTHS.map((m, i) => `<th>${m.endsWith('-01') || i === 0 ? m.slice(2, 4) + '/' : ''}${+m.slice(5)}</th>`).join('') + '<th></th></tr></thead><tbody>';
+  D.sites.forEach(s => { let n = 0, e = 0; h += `<tr><th>${SN(s.k)}</th>`;
+    MONTHS.forEach((m, i) => { const before = START[s.k] && m < START[s.k]; const r = REC[s.k + '|' + m]; if (!before) { e++; if (r) n++; }
+      h += `<td class="h-${before ? '前' : r ? r.st : '缺'}${i === st.m ? ' cur' : ''}" data-k="${s.k}" data-m="${i}" title="${SN(s.k)} ${ymL(m)}：${before ? '尚未加入' : r ? r.st : '未填報'}"></td>`; });
+    h += `<td class="rate">${Math.round(n / e * 100)}%</td></tr>`; });
+  $('#heat').innerHTML = h + '</tbody></table>';
+  $('#heat').querySelectorAll('td[data-k]').forEach(td => td.addEventListener('click', () => { if (td.classList.contains('h-前')) return; st.site = td.dataset.k; st.m = +td.dataset.m; render(); }));
+  const ym = MONTHS[st.m]; const items = []; let ok = 0; const miss = [];
+  D.sites.forEach(s => { if (START[s.k] && ym < START[s.k]) return; const r = REC[s.k + '|' + ym];
+    if (!r) miss.push(s.k); else if (r.st === '原始值') ok++; else items.push({ k: s.k, r }); });
+  let w = `<h2>${ymL(ym)} 說明</h2><div class="sum">原始值 ${ok}・調整值 ${items.filter(i => i.r.st === '調整值').length}・待查核 ${items.filter(i => i.r.st === '待查核').length}・未填報 ${miss.length}</div><ul>`;
+  items.sort((a, b) => a.r.st < b.r.st ? 1 : -1).forEach(({ k, r }) => {
+    w += `<li data-k="${k}"><span class="b" style="background:var(${r.st === '待查核' ? '--ask' : '--fix'})"></span><div><b>${SN(k)}</b> <span class="status st-${r.st}">${r.st}</span>` +
+      r.q.map(q => `<div>${q[0]}<div class="act">建議：${q[1]}</div></div>`).join('') + r.adj.map(a => `<div>${a}</div>`).join('') + '</div></li>'; });
+  if (miss.length) w += `<li><span class="b" style="box-shadow:inset 0 0 0 1px var(--na)"></span><div><b>未填報</b><div>${miss.map(SN).join('、')}</div></div></li>`;
+  if (!items.length && !miss.length) w += '<li><span></span><div class="meta">本月全部為原始值。</div></li>';
+  $('#why').innerHTML = w + '</ul>';
+  $('#why').querySelectorAll('li[data-k]').forEach(li => li.addEventListener('click', () => { st.site = li.dataset.k; setView('map'); }));
+}
+
+// ---------- 控制 ----------
+function setView(v) { st.v = v; try { history.replaceState(null, '', '#' + v); } catch (e) {} render(); }
+function render() {
+  document.querySelectorAll('.tabs button').forEach(b => b.setAttribute('aria-selected', b.dataset.v === st.v));
+  ['map', 'trend', 'official', 'qa'].forEach(v => { $('#v-' + v).hidden = v !== st.v; });
+  $('#params').innerHTML = Object.entries(PARAMS).map(([k, p]) => `<button data-p="${k}" aria-pressed="${st.p === k}">${p.name}</button>`).join('');
+  $('#params').querySelectorAll('button').forEach(b => b.addEventListener('click', () => { st.p = b.dataset.p; render(); }));
+  $('#params').hidden = st.v === 'official' || st.v === 'qa';
+  $('#month').value = st.m; $('#monthLbl').textContent = ymL(MONTHS[st.m]);
+  if (st.v === 'map') { drawMap(); drawPanel(); }
+  if (st.v === 'trend') drawTrend();
+  if (st.v === 'official') drawOfficial();
+  if (st.v === 'qa') drawQA();
+}
+document.querySelectorAll('.tabs button').forEach(b => b.addEventListener('click', () => setView(b.dataset.v)));
+$('#month').max = MONTHS.length - 1;
+$('#month').addEventListener('input', e => { st.m = +e.target.value; render(); });
+$('#tgOfficial').addEventListener('change', e => { st.official = e.target.checked; render(); });
+$('#tgMask').addEventListener('change', e => { st.mask = e.target.checked; render(); });
+$('#tgRain').addEventListener('change', e => { st.rain = e.target.checked; render(); });
+$('#all').addEventListener('click', () => { st.cmp = D.sites.map(s => s.k); render(); });
+$('#none').addEventListener('click', () => { st.cmp = []; render(); });
+$('#play').addEventListener('click', () => {
+  if (st.timer) { clearInterval(st.timer); st.timer = null; $('#play').textContent = '▶'; return; }
+  $('#play').textContent = '❚❚'; st.timer = setInterval(() => { st.m = (st.m + 1) % MONTHS.length; render(); }, 1200);
+});
+document.addEventListener('keydown', e => { if (e.target.tagName === 'INPUT' && e.target.type !== 'range') return;
+  if (e.key === 'ArrowRight' && e.target.type !== 'range') { st.m = Math.min(MONTHS.length - 1, st.m + 1); render(); }
+  if (e.key === 'ArrowLeft' && e.target.type !== 'range') { st.m = Math.max(0, st.m - 1); render(); } });
+$('#facts').textContent = `${new Set(D.sites.map(s => NAME(s.k))).size} 場域・${D.sites.length} 點位・${D.records.length} 筆・${ymL(MONTHS[0])}–${ymL(MONTHS[MONTHS.length - 1])}・每月第一個週二採樣`;
+let rt; addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(render, 120); });
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', render);
+new MutationObserver(render).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+render();
+</script>
+
+</body>
+</html>
